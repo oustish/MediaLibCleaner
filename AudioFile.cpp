@@ -1,4 +1,5 @@
 #include "AudioFile.h"
+#include <memory>
 
 MediaLibCleaner::AudioFile::AudioFile(std::string _path)
 {
@@ -10,20 +11,20 @@ MediaLibCleaner::AudioFile::AudioFile(std::string _path)
 		return;
 	}
 
-	TagLib::FileRef f(TagLib::FileName(this->pathname.c_str()));
+	std::unique_ptr <TagLib::FileRef> f(new TagLib::FileRef(TagLib::FileName(this->pathname.c_str())));
 
-	this->artist = f.tag()->artist();
-	this->title = f.tag()->title();
-	this->album = f.tag()->album();
-	this->genre = f.tag()->genre();
-	this->comment = f.tag()->comment();
-	this->track = f.tag()->track();
-	this->year = f.tag()->year();
+	this->artist = f->tag()->artist();
+	this->title = f->tag()->title();
+	this->album = f->tag()->album();
+	this->genre = f->tag()->genre();
+	this->comment = f->tag()->comment();
+	this->track = f->tag()->track();
+	this->year = f->tag()->year();
 
-	this->bitrate = f.audioProperties()->bitrate();
-	this->channels = f.audioProperties()->channels();
-	this->sampleRate = f.audioProperties()->sampleRate();
-	this->length = f.audioProperties()->length();
+	this->bitrate = f->audioProperties()->bitrate();
+	this->channels = f->audioProperties()->channels();
+	this->sampleRate = f->audioProperties()->sampleRate();
+	this->length = f->audioProperties()->length();
 
 	this->isInitiated = true;
 }
