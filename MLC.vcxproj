@@ -70,12 +70,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AudioFile.cpp" />
+    <ClCompile Include="helpers.cpp" />
+    <ClCompile Include="MediaLibCleaner.cpp" />
     <ClCompile Include="LuaFunctions.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AudioFile.hpp" />
+    <ClInclude Include="helpers.hpp" />
+    <ClInclude Include="main.hpp" />
+    <ClInclude Include="MediaLibCleaner.hpp" />
     <ClInclude Include="LuaFunctions.hpp" />
   </ItemGroup>
   <ItemGroup>
