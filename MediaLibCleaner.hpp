@@ -177,39 +177,39 @@ namespace MediaLibCleaner
 		/**
 		* An int containing information about audio file bitrate
 		*/
-		int _bitrate;
+		int d_bitrate;
 		/**
 		* An int containing information about audio file codec
 		*/
-		std::wstring _codec;
+		std::wstring d_codec;
 		/**
 		* An int containing information about audio file first cover mimetype
 		*/
-		std::wstring _cover_mimetype;
+		std::wstring d_cover_mimetype;
 		/**
 		* An int containing information about audio file first cover size (in bytes)
 		*/
-		size_t _cover_size;
+		size_t d_cover_size;
 		/**
 		* An int containing information about audio file first cover type
 		*/
-		std::wstring _cover_type;
+		std::wstring d_cover_type;
 		/**
 		* An int containing information about audio file covers count
 		*/
-		int _covers;
+		int d_covers;
 		/**
 		* An int containing information about amount of channels in audio file
 		*/
-		int _channels;
+		int d_channels;
 		/**
 		* An int containing information about auido file sample rate
 		*/
-		int _sampleRate;
+		int d_sampleRate;
 		/**
 		* An int containing information about audio file length in seconds
 		*/
-		int _length;
+		int d_length;
 
 
 
@@ -218,33 +218,33 @@ namespace MediaLibCleaner
 		/**
 		* An std::string containing full name of directory file resides in
 		*/
-		std::wstring _directory = L"";
+		std::wstring d_directory = L"";
 		/**
 		* An std::string containing file extension
 		*/
-		std::wstring _ext = L"";
+		std::wstring d_ext = L"";
 		/**
 		* An std::string containing file name (without extension)
 		*/
-		std::wstring _filename = L"";
+		std::wstring d_filename = L"";
 		/**
 		* An std::string containing full path of directory file resides in
 		*/
-		std::wstring _folderpath = L"";
+		std::wstring d_folderpath = L"";
 		/**
 		* An std::string containing name of parent directory
 		*/
-		std::wstring _parent_dir = L"";
+		std::wstring d_parent_dir = L"";
 		/**
 		* An std::string containing full path to audio file
 		*/
-		std::wstring _path = L"";
+		std::wstring d_path = L"";
 
 #ifdef WIN32
 		/**
 		* An std::string containing volume letter (Windows only)
 		*/
-		std::wstring _volume = L"";
+		std::wstring d_volume = L"";
 #endif
 
 
@@ -254,15 +254,15 @@ namespace MediaLibCleaner
 		/**
 		* An std::string containing file created date in unix timestamp format
 		*/
-		time_t _file_create_datetime_raw = 0;
+		time_t d_file_create_datetime_raw = 0;
 		/**
 		* An std::string containing file modified date in unix timestamp format
 		*/
-		time_t _file_mod_datetime_raw = 0;
+		time_t d_file_mod_datetime_raw = 0;
 		/**
 		* A size_t containing file size (in bytes)
 		*/
-		size_t _file_size_bytes = 0;
+		size_t d_file_size_bytes = 0;
 
 
 
@@ -272,7 +272,7 @@ namespace MediaLibCleaner
 		*/
 		bool isInitiated = false;
 
-		DFC* _dfc = NULL;
+		DFC* d_dfc = nullptr;
 
 		std::unique_ptr<TagLib::FileRef> fileref;
 
@@ -350,7 +350,11 @@ namespace MediaLibCleaner
 		std::wstring GetFileSizeKB();
 		std::wstring GetFileSizeMB();
 
-
+		// methods for lua processor manipulations
+		bool HasTag(std::wstring tag, std::wstring val = L"::null::");
+		bool Rename(std::wstring);
+		bool Move(std::wstring);
+		bool Delete();
 
 		bool IsInitiated();
 		DFC* GetDFC();
@@ -363,7 +367,7 @@ namespace MediaLibCleaner
 	class FilesAggregator {
 
 	protected:
-		std::list<File*> _files;
+		std::list<File*> d_files;
 		int cfile = 0;
 
 
@@ -379,25 +383,6 @@ namespace MediaLibCleaner
 		std::list<File*>::iterator end();
 
 		File* next();
+		File* re_set();
 	};
-
-
-
-
-
-	/*class DFCAggregator {
-	
-	protected:
-		std::list<DFC*> _directories;
-
-	public:
-		DFCAggregator();
-		~DFCAggregator();
-
-		void AddDirectory(DFC*);
-		DFC* GetDirectory(std::string);
-
-		std::list<DFC*>::iterator begin();
-		std::list<DFC*>::iterator end();
-	};*/
 }

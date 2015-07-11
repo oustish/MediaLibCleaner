@@ -1,4 +1,5 @@
 #include "helpers.hpp"
+#include <oaidl.h>
 
 /**
 * Function replacing every occurence of one string with another in given string.

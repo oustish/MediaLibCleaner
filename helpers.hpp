@@ -5,8 +5,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/locale.hpp>
 
-#include <Windows.h>
-
 void replaceAll(std::string&, const std::string&, const std::string&);
 void replaceAll(std::wstring&, const std::wstring&, const std::wstring&);
 std::string get_date_iso_8601(time_t);

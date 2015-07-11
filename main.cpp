@@ -13,24 +13,24 @@
 /**
  * Global variable of std::string containing path to working directory
  */
-std::string _path = "", 
+std::string path = "", 
 /**
  * Global variable of std::string containg path to error log file
  */
-	_error_log = "",
+	error_log = "",
 /**
  * Global variable of std::string containing path to log file
  */
-	_alert_log = "";
+	alert_log = "";
 /**
  * Global variable containing int coded level indicating what kind of messages will be written to error log
  */
-int _error_level = 0;
+int error_level = 0;
 
 /**
  * Global variable representing MediaLibCleaner::FilesAggregator object
  */
-std::unique_ptr<MediaLibCleaner::FilesAggregator> _filesAggregator;
+std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAggregator;
 
 /**
  * Function calling lua_IsAuidoFile() function. This function is registered withing lua processor!
@@ -40,7 +40,7 @@ std::unique_ptr<MediaLibCleaner::FilesAggregator> _filesAggregator;
  * @return Number of output arguments on stack for lua processor
  */
 static int lua_caller_isaudiofile(lua_State *L) {
-	return lua_IsAudioFile(L, _filesAggregator->CurrentFile());
+	return lua_IsAudioFile(L, filesAggregator->CurrentFile());
 }
 
 /**
@@ -51,7 +51,67 @@ static int lua_caller_isaudiofile(lua_State *L) {
  * @return Number of output arguments on stack for lua processor
  */
 static int lua_caller_settags(lua_State *L) {
-	return lua_SetTags(L, _filesAggregator->CurrentFile());
+	return lua_SetTags(L, filesAggregator->CurrentFile());
+}
+
+/**
+* Function calling lua_SetRequiredTags() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_setrequiredtags(lua_State *L)
+{
+	return lua_SetRequiredTags(L, filesAggregator->CurrentFile());
+}
+
+/**
+* Function calling lua_CheckTagsValues() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_checktagsvalues(lua_State *L)
+{
+	return lua_CheckTagsValues(L, filesAggregator->CurrentFile());
+}
+
+/**
+* Function calling lua_Rename() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_rename(lua_State *L)
+{
+	return lua_Rename(L, filesAggregator->CurrentFile());
+}
+
+/**
+* Function calling lua_Move() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_move(lua_State *L)
+{
+	return lua_Move(L, filesAggregator->CurrentFile());
+}
+
+/**
+* Function calling lua_Delete() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_delete(lua_State *L)
+{
+	return lua_Delete(L, filesAggregator->CurrentFile());
 }
 
 
@@ -62,18 +122,18 @@ static int lua_caller_settags(lua_State *L) {
 
 // cerr and cout streams, if required by the user
 /**
- * Global variable to store new std::cerr::rdbuf to allow user to define his own error stream (as a file)
+ * Global variable to store new std::wcerr::rdbuf to allow user to define his own error stream (as a file)
  */
-std::ofstream _cerr;
+std::ofstream wcerr;
 
 /**
- * Global variable to store new std::cout::rdbuf to allow user to define his own output stream (as a file)
+ * Global variable to store new std::wcout::rdbuf to allow user to define his own output stream (as a file)
  */
-std::ofstream _cout;
+std::ofstream wcout;
 
 // some variables required for aliases
-int _total_files = 0;
-time_t _datetime_raw = 0;
+int total_files = 0;
+time_t datetime_raw = 0;
 
 
 
@@ -91,7 +151,7 @@ time_t _datetime_raw = 0;
  */
 int main(int argc, char *argv[]) {
 	// capture time app was launched
-	_datetime_raw = time(nullptr);
+	datetime_raw = time(nullptr);
 
 	// easy way to fix found problems with diacritic letters in filenames :)
 	// it wasn't so easy to find though...
@@ -116,6 +176,11 @@ int main(int argc, char *argv[]) {
 	// register C functions in lua processor
 	lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
 	lua_register(L, "_SetTags", lua_caller_settags);
+	lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
+	lua_register(L, "_CheckTagsValues", lua_caller_checktagsvalues);
+	lua_register(L, "_Rename", lua_caller_rename);
+	lua_register(L, "_Move", lua_caller_move);
+	lua_register(L, "_Delete", lua_caller_delete);
 
 	// _action == System
 	// as we need these informations once at the beginning
@@ -145,89 +210,125 @@ int main(int argc, char *argv[]) {
 	}
 
 	// read all parameters
-	_path = lua_tostring(L, -1);
-	_alert_log = lua_tostring(L, -2);
-	_error_log = lua_tostring(L, -3);
-	_error_level = static_cast<int>(lua_tonumber(L, -4));
+	path = lua_tostring(L, -1);
+	alert_log = lua_tostring(L, -2);
+	error_log = lua_tostring(L, -3);
+	error_level = static_cast<int>(lua_tonumber(L, -4));
 
-	if (_error_log != "-") {
+	if (error_log != "-") {
 		// set cerr to proper value
-		_cerr.open(_error_log);
-		std::cerr.rdbuf(_cerr.rdbuf());
+		wcerr.open(error_log);
+		std::cerr.rdbuf(wcerr.rdbuf());
 	}
 
-	if (_alert_log != "-") {
+	if (alert_log != "-") {
 		// set cout to proper value
-		_cout.open(_alert_log);
-		std::cout.rdbuf(_cout.rdbuf());
+		wcout.open(alert_log);
+		std::cout.rdbuf(wcout.rdbuf());
 	}
 
+	lua_close(L);
 
 	// BELOW ARE PROCEDURES TO SCAN GIVEN DIRECTORY AND RETRIEVE ALL INFO WE REQUIRE
 	// create MediaLibCleaner::FilesAggregator object nad swap it with global variable one
 	std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAgg(new MediaLibCleaner::FilesAggregator());
-	filesAgg.swap(_filesAggregator);
+	filesAgg.swap(filesAggregator);
 
 	// shorten namespace
 	namespace fs = boost::filesystem;
-	fs::path _workingdir(_path);
+	fs::path workingdir(path);
 
-	if (!fs::exists(_workingdir) || !fs::is_directory(_workingdir)) {
+	if (!fs::exists(workingdir) || !fs::is_directory(workingdir)) {
 		return 3; // ret. val; debug
 	}
 
-	fs::path dirpath = _workingdir;
-	MediaLibCleaner::DFC *_currdfc = new MediaLibCleaner::DFC(_path);
-	for (fs::recursive_directory_iterator dir(_path), dir_end; dir != dir_end; ++dir)
+	fs::path dirpath = workingdir;
+	MediaLibCleaner::DFC *currdfc = new MediaLibCleaner::DFC(path);
+	for (fs::recursive_directory_iterator dir(path), dir_end; dir != dir_end; ++dir)
 	{
 		fs::path filepath = dir->path();
+
+		if (filepath == L"." || filepath == L"..") continue;
 
 		if (!(filepath.has_filename() && filepath.has_extension())) {
 			// not a file, but a directory!
 			dirpath = filepath;
 
-			_currdfc = new MediaLibCleaner::DFC(dirpath.string());
+			currdfc = new MediaLibCleaner::DFC(dirpath.string());
 
 			continue;
 		}
 
 		// create File object for file
-		MediaLibCleaner::File *filez = new MediaLibCleaner::File(filepath.wstring(), _currdfc);
-		_filesAggregator->AddFile(filez);
+		MediaLibCleaner::File *filez = new MediaLibCleaner::File(filepath.wstring(), currdfc);
+		filesAggregator->AddFile(filez);
 
 		// increment total_files counter if audio file
-		if (filez->IsInitiated()) _total_files++;
+		if (filez->IsInitiated()) total_files++;
 
 		// increment folder counter
 		if (dirpath.string() != "")
-			_currdfc->IncCount();
+			currdfc->IncCount();
 	}
 
 
 
-	// DEBUG - ITERATE OVER COLLECTION
-	auto end = _filesAggregator->end();
-	for (auto it = _filesAggregator->begin(); it != end; ++it) {
-		if (!(*it)->IsInitiated()) continue;
+	// ITERATE OVER COLLECTION AND PROCESS FILES
+	MediaLibCleaner::File* cfile = filesAggregator->re_set();
+	do {
+		std::wcout << std::endl << std::endl << std::endl << std::endl;
+		std::wcout << L"File: " << cfile->GetPath() << std::endl << std::endl;
 
-		std::wcout << "[" << (*it)->GetAlbum() << "] " << (*it)->GetArtist() << " - " << (*it)->GetTitle() << std::endl;
-	}
+		std::wstring new_config = ReplaceAllAliasOccurences(wconfig, cfile);
 
-	std::cout << std::endl << "TOTAL AUDIO FILES: " << _total_files << std::endl;
+		//std::wcout << new_config << std::endl << std::endl;
+
+		L = luaL_newstate();
+		luaL_openlibs(L);
+
+		// register C functions in lua processor
+		lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
+		lua_register(L, "_SetTags", lua_caller_settags);
+		lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
+		lua_register(L, "_CheckTagsValues", lua_caller_checktagsvalues);
+		lua_register(L, "_Rename", lua_caller_rename);
+		lua_register(L, "_Move", lua_caller_move);
+		lua_register(L, "_Delete", lua_caller_delete);
+
+		std::string nc = ws2s(new_config);
+
+		s = luaL_loadstring(L, nc.c_str());
+		lua_pushstring(L, "");
+		lua_setglobal(L, "_action");
+
+		// exetute script
+		if (s == 0) {
+			s = lua_pcall(L, 0, LUA_MULTRET, 0);
+		}
+		if (s != 0) { // because error code may change after execution
+			// report any errors, if found
+			lua_error_reporting(L, s);
+		}
+
+		lua_close(L);
+
+		cfile = filesAggregator->next();
+	} while (cfile != nullptr);
+	
 
 
 	// wait for user
 	system("pause >NUL");
 
 	// flush and close cout and cerr, if opened previously
-	if (_cerr.is_open()) {
-		_cerr.flush();
-		_cerr.close();
+	if (wcerr.is_open()) {
+		wcerr.flush();
+		wcerr.close();
 	}
 
-	if (_cout.is_open()) {
-		_cout.flush();
-		_cout.close();
+	if (wcout.is_open()) {
+		wcout.flush();
+		wcout.close();
 	}
 
 	return 0;
@@ -275,85 +376,85 @@ void lua_error_reporting(lua_State *L, int status) {
  *
  * @return String containing config file with aliases replaced
  */
-static std::wstring _ReplaceAllAliasOccurences(std::wstring& _wconfig, std::unique_ptr<MediaLibCleaner::File>& _audiofile) {
-	std::wstring _newc = _wconfig;
+std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File* audiofile) {
+	std::wstring newc = wcfg;
 
 	// copy original path to not confuse rest of the program
-	std::wstring _path = _audiofile->GetPath();
-	replaceAll(_path, L"\\", L"\\\\");
+	std::wstring lpath = audiofile->GetPath();
+	replaceAll(lpath, L"\\", L"\\\\");
 
 	// do the magic!
 	// SONG DATA
-	replaceAll(_newc, L"%artist%", _audiofile->GetArtist());
-	replaceAll(_newc, L"%title%", _audiofile->GetTitle());
-	replaceAll(_newc, L"%album%", _audiofile->GetAlbum());
-	replaceAll(_newc, L"%genre%", _audiofile->GetGenre());
-	replaceAll(_newc, L"%comment%", _audiofile->GetComment());
-	replaceAll(_newc, L"%track%", std::to_wstring(_audiofile->GetTrack()));
-	replaceAll(_newc, L"%year%", std::to_wstring(_audiofile->GetYear()));
-	replaceAll(_newc, L"%albumartist%", _audiofile->GetAlbumArtist());
-	replaceAll(_newc, L"%bpm%", _audiofile->GetBPM());
-	replaceAll(_newc, L"%copyright%", _audiofile->GetCopyright());
-	replaceAll(_newc, L"%language%", _audiofile->GetLanguage());
-	replaceAll(_newc, L"%length%", _audiofile->GetTagLength());
-	replaceAll(_newc, L"%mood%", _audiofile->GetMood());
-	replaceAll(_newc, L"%origalbum%", _audiofile->GetOrigAlbum());
-	replaceAll(_newc, L"%origartist%", _audiofile->GetOrigArtist());
-	replaceAll(_newc, L"%origfilename%", _audiofile->GetOrigFilename());
-	replaceAll(_newc, L"%origyear%", _audiofile->GetOrigYear());
-	replaceAll(_newc, L"%publisher%", _audiofile->GetPublisher());
-	replaceAll(_newc, L"%unsyncedlyrics%", _audiofile->GetLyricsUnsynced());
-	replaceAll(_newc, L"%www%", _audiofile->GetWWW());
+	replaceAll(newc, L"%artist%", audiofile->GetArtist());
+	replaceAll(newc, L"%title%", audiofile->GetTitle());
+	replaceAll(newc, L"%album%", audiofile->GetAlbum());
+	replaceAll(newc, L"%genre%", audiofile->GetGenre());
+	replaceAll(newc, L"%comment%", audiofile->GetComment());
+	replaceAll(newc, L"%track%", std::to_wstring(audiofile->GetTrack()));
+	replaceAll(newc, L"%year%", std::to_wstring(audiofile->GetYear()));
+	replaceAll(newc, L"%albumartist%", audiofile->GetAlbumArtist());
+	replaceAll(newc, L"%bpm%", audiofile->GetBPM());
+	replaceAll(newc, L"%copyright%", audiofile->GetCopyright());
+	replaceAll(newc, L"%language%", audiofile->GetLanguage());
+	replaceAll(newc, L"%length%", audiofile->GetTagLength());
+	replaceAll(newc, L"%mood%", audiofile->GetMood());
+	replaceAll(newc, L"%origalbum%", audiofile->GetOrigAlbum());
+	replaceAll(newc, L"%origartist%", audiofile->GetOrigArtist());
+	replaceAll(newc, L"%origfilename%", audiofile->GetOrigFilename());
+	replaceAll(newc, L"%origyear%", audiofile->GetOrigYear());
+	replaceAll(newc, L"%publisher%", audiofile->GetPublisher());
+	replaceAll(newc, L"%unsyncedlyrics%", audiofile->GetLyricsUnsynced());
+	replaceAll(newc, L"%www%", audiofile->GetWWW());
 
 	// TECHNICAL INFO
-	replaceAll(_newc, L"%_bitrate%", std::to_wstring(_audiofile->GetBitrate()));
-	replaceAll(_newc, L"%_codec%", _audiofile->GetCodec());
-	replaceAll(_newc, L"%_cover_mimetype%", _audiofile->GetCoverMimetype());
-	replaceAll(_newc, L"%_cover_size%", std::to_wstring(_audiofile->GetCoverSize()));
-	replaceAll(_newc, L"%_coder_type%", _audiofile->GetCoverType());
-	replaceAll(_newc, L"%_covers%", std::to_wstring(_audiofile->GetCovers()));
-	replaceAll(_newc, L"%_length%", _audiofile->GetLengthAsString());
-	replaceAll(_newc, L"%_length_seconds%", std::to_wstring(_audiofile->GetLength()));
-	replaceAll(_newc, L"%_channels%", std::to_wstring(_audiofile->GetChannels()));
-	replaceAll(_newc, L"%_samplerate%", std::to_wstring(_audiofile->GetSampleRate()));
+	replaceAll(newc, L"%_bitrate%", std::to_wstring(audiofile->GetBitrate()));
+	replaceAll(newc, L"%_codec%", audiofile->GetCodec());
+	replaceAll(newc, L"%_cover_mimetype%", audiofile->GetCoverMimetype());
+	replaceAll(newc, L"%_cover_size%", std::to_wstring(audiofile->GetCoverSize()));
+	replaceAll(newc, L"%_coder_type%", audiofile->GetCoverType());
+	replaceAll(newc, L"%_covers%", std::to_wstring(audiofile->GetCovers()));
+	replaceAll(newc, L"%_length%", audiofile->GetLengthAsString());
+	replaceAll(newc, L"%_length_seconds%", std::to_wstring(audiofile->GetLength()));
+	replaceAll(newc, L"%_channels%", std::to_wstring(audiofile->GetChannels()));
+	replaceAll(newc, L"%_samplerate%", std::to_wstring(audiofile->GetSampleRate()));
 
 
 	// PATH INFO
-	replaceAll(_newc, L"%_directory%", _audiofile->GetDirectory());
-	replaceAll(_newc, L"%_ext%", _audiofile->GetExt());
-	replaceAll(_newc, L"%_filename%", _audiofile->GetFilename());
-	replaceAll(_newc, L"%_filename_ext%", _audiofile->GetFilenameExt());
-	replaceAll(_newc, L"%_folderpath%", _audiofile->GetFolderPath());
-	replaceAll(_newc, L"%_parent_dir%", _audiofile->GetParentDir());
-	replaceAll(_newc, L"%_path%", _audiofile->GetPath());
+	replaceAll(newc, L"%_directory%", audiofile->GetDirectory());
+	replaceAll(newc, L"%_ext%", audiofile->GetExt());
+	replaceAll(newc, L"%_filename%", audiofile->GetFilename());
+	replaceAll(newc, L"%_filename_ext%", audiofile->GetFilenameExt());
+	replaceAll(newc, L"%_folderpath%", audiofile->GetFolderPath());
+	replaceAll(newc, L"%_parent_dir%", audiofile->GetParentDir());
+	replaceAll(newc, L"%_path%", audiofile->GetPath());
 #ifdef WIN32
-	replaceAll(_newc, L"%_volume%", _audiofile->GetVolume());
+	replaceAll(newc, L"%_volume%", audiofile->GetVolume());
 #endif
 	//replaceAll(_newc, "%_workingdir%", );
 	//replaceAll(_newc, "%_workingpath%", );
 
 
 	// FILES PROPERTIES
-	replaceAll(_newc, L"%_file_create_date%", _audiofile->GetFileCreateDate());
-	replaceAll(_newc, L"%_file_create_datetime%", _audiofile->GetFileCreateDatetime());
-	replaceAll(_newc, L"%_file_create_datetime_raw%", std::to_wstring(_audiofile->GetFileCreateDatetimeRaw()));
-	replaceAll(_newc, L"%_file_mod_date%", _audiofile->GetFileModDate());
-	replaceAll(_newc, L"%_file_mod_datetime%", _audiofile->GetFileModDatetime());
-	replaceAll(_newc, L"%_file_mod_datetime_raw%", std::to_wstring(_audiofile->GetFileModDatetimeRaw()));
-	replaceAll(_newc, L"%_file_size%", _audiofile->GetFileSize());
-	replaceAll(_newc, L"%_file_size_bytes%", std::to_wstring(_audiofile->GetFileSizeBytes()));
-	replaceAll(_newc, L"%_file_size_kb%", _audiofile->GetFileSizeKB());
-	replaceAll(_newc, L"%_file_size_mb%", _audiofile->GetFileSizeMB());
+	replaceAll(newc, L"%_file_create_date%", audiofile->GetFileCreateDate());
+	replaceAll(newc, L"%_file_create_datetime%", audiofile->GetFileCreateDatetime());
+	replaceAll(newc, L"%_file_create_datetime_raw%", std::to_wstring(audiofile->GetFileCreateDatetimeRaw()));
+	replaceAll(newc, L"%_file_mod_date%", audiofile->GetFileModDate());
+	replaceAll(newc, L"%_file_mod_datetime%", audiofile->GetFileModDatetime());
+	replaceAll(newc, L"%_file_mod_datetime_raw%", std::to_wstring(audiofile->GetFileModDatetimeRaw()));
+	replaceAll(newc, L"%_file_size%", audiofile->GetFileSize());
+	replaceAll(newc, L"%_file_size_bytes%", std::to_wstring(audiofile->GetFileSizeBytes()));
+	replaceAll(newc, L"%_file_size_kb%", audiofile->GetFileSizeKB());
+	replaceAll(newc, L"%_file_size_mb%", audiofile->GetFileSizeMB());
 
 
 	// SYSTEM DATA
-	//replaceAll(_newc, L"%_counter_dir%", _audiofile->GetComment());
-	replaceAll(_newc, L"%_counter_total%", std::to_wstring(_total_files));
-	replaceAll(_newc, L"%_date%", get_date_iso_8601_wide(_datetime_raw));
-	replaceAll(_newc, L"%_datetime%", get_date_rfc_2822_wide(_datetime_raw));
-	replaceAll(_newc, L"%_datetime_raw%", std::to_wstring(time(nullptr)));
-	replaceAll(_newc, L"%_total_files%", std::to_wstring(_total_files));
-	replaceAll(_newc, L"%_total_files_dir%", std::to_wstring(_audiofile->GetDFC()->GetCounter()));
+	//replaceAll(_newc, L"%_counter_dir%", audiofile->GetComment());
+	replaceAll(newc, L"%_counter_total%", std::to_wstring(total_files));
+	replaceAll(newc, L"%_date%", get_date_iso_8601_wide(datetime_raw));
+	replaceAll(newc, L"%_datetime%", get_date_rfc_2822_wide(datetime_raw));
+	replaceAll(newc, L"%_datetime_raw%", std::to_wstring(time(nullptr)));
+	replaceAll(newc, L"%_total_files%", std::to_wstring(total_files));
+	replaceAll(newc, L"%_total_files_dir%", std::to_wstring(audiofile->GetDFC()->GetCounter()));
 
-	return _newc;
+	return newc;
 }

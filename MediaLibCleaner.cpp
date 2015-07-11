@@ -21,15 +21,15 @@
  */
 MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 {
-	this->_path = path;
-	this->_dfc = dfc;
+	this->d_path = path;
+	this->d_dfc = dfc;
 
 	// check if file exists
 	if (!boost::filesystem::exists(path)) {
 		return;
 	}
 
-	std::unique_ptr <TagLib::FileRef> f(new TagLib::FileRef(TagLib::FileName(this->_path.c_str())));
+	std::unique_ptr <TagLib::FileRef> f(new TagLib::FileRef(TagLib::FileName(this->d_path.c_str())));
 
 	this->fileref.swap(f);
 
@@ -48,44 +48,44 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	// rest of aliases defined below
 
 	// TECHNICAL INFO
-	this->_bitrate = this->fileref->audioProperties()->bitrate();
-	//this->_codec = 
-	//this->_cover_mimetype = 
-	//this->_cover_size = 
-	//this->_cover_type = 
-	//this->_covers = 
-	this->_channels = this->fileref->audioProperties()->channels();
-	this->_sampleRate = this->fileref->audioProperties()->sampleRate();
-	this->_length = this->fileref->audioProperties()->length();
+	this->d_bitrate = this->fileref->audioProperties()->bitrate();
+	//this->d_codec = 
+	//this->d_cover_mimetype = 
+	//this->d_cover_size = 
+	//this->d_cover_type = 
+	//this->d_covers = 
+	this->d_channels = this->fileref->audioProperties()->channels();
+	this->d_sampleRate = this->fileref->audioProperties()->sampleRate();
+	this->d_length = this->fileref->audioProperties()->length();
 
 
 	// BOOST INIT FOR PATH INFORMATIONS
 	namespace fs = boost::filesystem;
-	fs::path temp = this->_path;
+	fs::path temp = this->d_path;
 	fs::path fileParentDir = temp.parent_path();
 	fs::path pDirParentDir = fileParentDir.parent_path();
 
 	// PATH INFO
-	this->_directory = fileParentDir.filename().wstring();
-	this->_ext = temp.extension().wstring();					this->_ext = this->_ext.substr(1);
-	this->_filename = temp.filename().wstring();				this->_filename = this->_filename.substr(0, this->_filename.length() - this->_ext.length() - 1);
-	this->_folderpath = fileParentDir.wstring();
-	this->_parent_dir = pDirParentDir.filename().wstring();
+	this->d_directory = fileParentDir.filename().wstring();
+	this->d_ext = temp.extension().wstring();					this->d_ext = this->d_ext.substr(1);
+	this->d_filename = temp.filename().wstring();				this->d_filename = this->d_filename.substr(0, this->d_filename.length() - this->d_ext.length() - 1);
+	this->d_folderpath = fileParentDir.wstring();
+	this->d_parent_dir = pDirParentDir.filename().wstring();
 	// _path is setted before - required
 #ifdef WIN32
-	this->_volume = temp.root_name().wstring();
+	this->d_volume = temp.root_name().wstring();
 #endif
 
 	// STAT INIT FOR DATE INFORMATION
 	// WARNING: MAY ONLY WORK IN WINDOWS!!!
 
 	struct stat attrib;
-	stat(ws2s(this->_path).c_str(), &attrib);
+	stat(ws2s(this->d_path).c_str(), &attrib);
 
 	// FILE PROPERTIES
-	this->_file_create_datetime_raw = attrib.st_ctime;
-	this->_file_mod_datetime_raw = attrib.st_mtime;
-	this->_file_size_bytes = fs::file_size(temp);
+	this->d_file_create_datetime_raw = attrib.st_ctime;
+	this->d_file_mod_datetime_raw = attrib.st_mtime;
+	this->d_file_size_bytes = fs::file_size(temp);
 
 
 	TagLib::FileRef *fr = this->fileref.release();
@@ -96,26 +96,26 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 
 	//check for file type
 	
-	if (this->_ext == L"mp3") {
-		std::unique_ptr<TagLib::MPEG::File> temp(new TagLib::MPEG::File(TagLib::FileName(this->_path.c_str())));
+	if (this->d_ext == L"mp3") {
+		std::unique_ptr<TagLib::MPEG::File> temp(new TagLib::MPEG::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_mp3);
 	}
-	else if (this->_ext == L"ogg") {
-		std::unique_ptr<TagLib::Ogg::Vorbis::File> temp(new TagLib::Ogg::Vorbis::File(TagLib::FileName(this->_path.c_str())));
+	else if (this->d_ext == L"ogg") {
+		std::unique_ptr<TagLib::Ogg::Vorbis::File> temp(new TagLib::Ogg::Vorbis::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_ogg);
 	}
-	else if (this->_ext == L"flac") {
-		std::unique_ptr<TagLib::Ogg::FLAC::File> temp(new TagLib::Ogg::FLAC::File(TagLib::FileName(this->_path.c_str())));
+	else if (this->d_ext == L"flac") {
+		std::unique_ptr<TagLib::Ogg::FLAC::File> temp(new TagLib::Ogg::FLAC::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_flac);
 	}
-	else if (this->_ext == L"m4a") {
-		std::unique_ptr<TagLib::MP4::File> temp(new TagLib::MP4::File(TagLib::FileName(this->_path.c_str())));
+	else if (this->d_ext == L"m4a") {
+		std::unique_ptr<TagLib::MP4::File> temp(new TagLib::MP4::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_m4a);
 	}
 	else { return; }
 
 
-	if (this->_ext == L"mp3") { // ID3v1, ID3v2 or APE tags present
+	if (this->d_ext == L"mp3") { // ID3v1, ID3v2 or APE tags present
 		TagLib::ID3v1::Tag *id3v1tag = this->taglib_file_mp3->ID3v1Tag();
 		TagLib::ID3v2::Tag *id3v2tag = this->taglib_file_mp3->ID3v2Tag();
 		TagLib::APE::Tag *apetag = this->taglib_file_mp3->APETag();
@@ -204,7 +204,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 			this->www = "";
 		}
 	}
-	else if (this->_ext == L"ogg") {
+	else if (this->d_ext == L"ogg") {
 		TagLib::PropertyMap tags = this->taglib_file_ogg->tag()->properties();
 
 		for (auto it = tags.begin(); it != tags.end(); it++) {
@@ -485,7 +485,7 @@ std::wstring MediaLibCleaner::File::GetWWW() {
 */
 int MediaLibCleaner::File::GetBitrate() {
 	if (this->isInitiated)
-		return this->_bitrate;
+		return this->d_bitrate;
 	return -1;
 }
 
@@ -496,7 +496,7 @@ int MediaLibCleaner::File::GetBitrate() {
 */
 std::wstring MediaLibCleaner::File::GetCodec() {
 	if (this->isInitiated)
-		return this->_codec;
+		return this->d_codec;
 	return L"";
 }
 
@@ -507,7 +507,7 @@ std::wstring MediaLibCleaner::File::GetCodec() {
 */
 std::wstring MediaLibCleaner::File::GetCoverMimetype() {
 	if (this->isInitiated)
-		return this->_cover_mimetype;
+		return this->d_cover_mimetype;
 	return L"";
 }
 
@@ -518,7 +518,7 @@ std::wstring MediaLibCleaner::File::GetCoverMimetype() {
 */
 size_t MediaLibCleaner::File::GetCoverSize() {
 	if (this->isInitiated)
-		return this->_cover_size;
+		return this->d_cover_size;
 	return -1;
 }
 
@@ -529,7 +529,7 @@ size_t MediaLibCleaner::File::GetCoverSize() {
 */
 std::wstring MediaLibCleaner::File::GetCoverType() {
 	if (this->isInitiated)
-		return this->_cover_type;
+		return this->d_cover_type;
 	return L"";
 }
 
@@ -540,7 +540,7 @@ std::wstring MediaLibCleaner::File::GetCoverType() {
 */
 int MediaLibCleaner::File::GetCovers() {
 	if (this->isInitiated)
-		return this->_covers;
+		return this->d_covers;
 	return -1;
 }
 
@@ -551,7 +551,7 @@ int MediaLibCleaner::File::GetCovers() {
 */
 int MediaLibCleaner::File::GetChannels() {
 	if (this->isInitiated)
-		return this->_channels;
+		return this->d_channels;
 	return -1;
 }
 
@@ -562,7 +562,7 @@ int MediaLibCleaner::File::GetChannels() {
 */
 int MediaLibCleaner::File::GetSampleRate() {
 	if (this->isInitiated)
-		return this->_sampleRate;
+		return this->d_sampleRate;
 	return -1;
 }
 
@@ -574,34 +574,34 @@ int MediaLibCleaner::File::GetSampleRate() {
 std::wstring MediaLibCleaner::File::GetLengthAsString() {
 	if (!this->isInitiated) return L"";
 
-	std::wstring _out = L"";
+	std::wstring out = L"";
 	int hours = 0, minutes = 0, seconds;
 
-	if (this->_length >= 3600) { // if longer than or equal to 1 hour
-		hours = this->_length / 3600; // no rest, only full hours
+	if (this->d_length >= 3600) { // if longer than or equal to 1 hour
+		hours = this->d_length / 3600; // no rest, only full hours
 
 		if (hours < 10) {
-			_out += L"0";
+			out += L"0";
 		}
-		_out += std::to_wstring(hours) + L":";
+		out += std::to_wstring(hours) + L":";
 	}
 
-	if (this->_length >= 60) { // if longer than or equal to 1 minute
-		minutes = (this->_length - hours * 3600) / 60; //  no rest, only full remaining minutes
+	if (this->d_length >= 60) { // if longer than or equal to 1 minute
+		minutes = (this->d_length - hours * 3600) / 60; //  no rest, only full remaining minutes
 
 		if (minutes < 10) {
-			_out += L"0";
+			out += L"0";
 		}
-		_out += std::to_wstring(minutes) + L":";
+		out += std::to_wstring(minutes) + L":";
 	}
 
-	seconds = this->_length - hours * 3600 - minutes * 60;
+	seconds = this->d_length - hours * 3600 - minutes * 60;
 	if (seconds < 10) {
-		_out += L"0";
+		out += L"0";
 	}
-	_out += std::to_wstring(seconds);
+	out += std::to_wstring(seconds);
 
-	return _out;
+	return out;
 }
 
 /**
@@ -611,7 +611,7 @@ std::wstring MediaLibCleaner::File::GetLengthAsString() {
 */
 int MediaLibCleaner::File::GetLength() {
 	if (this->isInitiated)
-		return this->_length;
+		return this->d_length;
 	return -1;
 }
 
@@ -626,7 +626,7 @@ int MediaLibCleaner::File::GetLength() {
 * @return Directory name containing file
 */
 std::wstring MediaLibCleaner::File::GetDirectory() {
-	return this->_directory;
+	return this->d_directory;
 }
 /**
 * Method returns extension of the file
@@ -634,7 +634,7 @@ std::wstring MediaLibCleaner::File::GetDirectory() {
 * @return File extension
 */
 std::wstring MediaLibCleaner::File::GetExt() {
-	return this->_ext;
+	return this->d_ext;
 }
 /**
 * Method returns name of the file without extension
@@ -642,7 +642,7 @@ std::wstring MediaLibCleaner::File::GetExt() {
 * @return Filename without extension
 */
 std::wstring MediaLibCleaner::File::GetFilename() {
-	return this->_filename;
+	return this->d_filename;
 }
 /**
 * Method returns filename with the extension
@@ -650,7 +650,7 @@ std::wstring MediaLibCleaner::File::GetFilename() {
 * @return Filename with extensions
 */
 std::wstring MediaLibCleaner::File::GetFilenameExt() {
-	return (this->_filename + L"." + this->_ext);
+	return (this->d_filename + L"." + this->d_ext);
 }
 /**
 * Method returns path to directory that contains the file
@@ -658,7 +658,7 @@ std::wstring MediaLibCleaner::File::GetFilenameExt() {
 * @return Path to directory containing file
 */
 std::wstring MediaLibCleaner::File::GetFolderPath() {
-	return this->_folderpath;
+	return this->d_folderpath;
 }
 /**
 * Method returns name of parent directory for %_directory% dir
@@ -666,7 +666,7 @@ std::wstring MediaLibCleaner::File::GetFolderPath() {
 * @return Name of parent dir for %_directory% dir
 */
 std::wstring MediaLibCleaner::File::GetParentDir() {
-	return this->_parent_dir;
+	return this->d_parent_dir;
 }
 /**
 * Method returns full path to audio file given object represents
@@ -674,7 +674,7 @@ std::wstring MediaLibCleaner::File::GetParentDir() {
 * @return Full path to audio file
 */
 std::wstring MediaLibCleaner::File::GetPath() {
-	return this->_path;
+	return this->d_path;
 }
 
 #ifdef WIN32
@@ -684,7 +684,7 @@ std::wstring MediaLibCleaner::File::GetPath() {
 	* @return Letter followed by colon of volume the file resides on
 	*/
 	std::wstring MediaLibCleaner::File::GetVolume() {
-		return this->_volume;
+		return this->d_volume;
 	}
 #endif
 
@@ -697,7 +697,7 @@ std::wstring MediaLibCleaner::File::GetPath() {
 * @return File created date in ISO 8601 format
 */
 std::wstring MediaLibCleaner::File::GetFileCreateDate() {
-	return get_date_iso_8601_wide(this->_file_create_datetime_raw);
+	return get_date_iso_8601_wide(this->d_file_create_datetime_raw);
 }
 /**
 * Method returns file created date in RFC 2822 format
@@ -705,7 +705,7 @@ std::wstring MediaLibCleaner::File::GetFileCreateDate() {
 * @return File created date in RFC 2822 format
 */
 std::wstring MediaLibCleaner::File::GetFileCreateDatetime() {
-	return get_date_rfc_2822_wide(this->_file_create_datetime_raw);
+	return get_date_rfc_2822_wide(this->d_file_create_datetime_raw);
 }
 /**
 * Method returns file created date in unix timestamp format
@@ -713,7 +713,7 @@ std::wstring MediaLibCleaner::File::GetFileCreateDatetime() {
 * @return File created date in unix timestamp format
 */
 time_t MediaLibCleaner::File::GetFileCreateDatetimeRaw() {
-	return this->_file_create_datetime_raw;
+	return this->d_file_create_datetime_raw;
 }
 /**
 * Method returns file modified date in ISO 8601 format
@@ -721,7 +721,7 @@ time_t MediaLibCleaner::File::GetFileCreateDatetimeRaw() {
 * @return File modified date in ISO 8601 format
 */
 std::wstring MediaLibCleaner::File::GetFileModDate() {
-	return get_date_iso_8601_wide(this->_file_mod_datetime_raw);
+	return get_date_iso_8601_wide(this->d_file_mod_datetime_raw);
 }
 /**
 * Method returns file modified date in RFC 2822 format
@@ -729,7 +729,7 @@ std::wstring MediaLibCleaner::File::GetFileModDate() {
 * @return File modified date in RFC 2822 format
 */
 std::wstring MediaLibCleaner::File::GetFileModDatetime() {
-	return get_date_rfc_2822_wide(this->_file_mod_datetime_raw);
+	return get_date_rfc_2822_wide(this->d_file_mod_datetime_raw);
 }
 /**
 * Method returns file modified date in unix timestamp format
@@ -737,7 +737,7 @@ std::wstring MediaLibCleaner::File::GetFileModDatetime() {
 * @return File modified date in unix timestamp format
 */
 time_t MediaLibCleaner::File::GetFileModDatetimeRaw() {
-	return this->_file_mod_datetime_raw;
+	return this->d_file_mod_datetime_raw;
 }
 /**
 * Method returns file size in human readable format
@@ -745,15 +745,15 @@ time_t MediaLibCleaner::File::GetFileModDatetimeRaw() {
 * @return File size in human readable format
 */
 std::wstring MediaLibCleaner::File::GetFileSize() {
-	float temp = this->_file_size_bytes / 1048576; // MB
+	float temp = this->d_file_size_bytes / 1048576; // MB
 
-	if (this->_file_size_bytes <= 1023) { // B
-		return std::to_wstring(this->_file_size_bytes) + L"B";
+	if (this->d_file_size_bytes <= 1023) { // B
+		return std::to_wstring(this->d_file_size_bytes) + L"B";
 	}
-	else if (this->_file_size_bytes > 1023 && this->_file_size_bytes <= 1048575) { // KB
+	else if (this->d_file_size_bytes > 1023 && this->d_file_size_bytes <= 1048575) { // KB
 		return this->GetFileSizeKB();
 	}
-	else if (this->_file_size_bytes > 1048575 && temp < 1024) { // MB
+	else if (this->d_file_size_bytes > 1048575 && temp < 1024) { // MB
 		return this->GetFileSizeMB();
 	}
 	else { // GB
@@ -766,7 +766,7 @@ std::wstring MediaLibCleaner::File::GetFileSize() {
 * @return File size in bytes
 */
 size_t MediaLibCleaner::File::GetFileSizeBytes() {
-	return this->_file_size_bytes;
+	return this->d_file_size_bytes;
 }
 /**
 * Method returns file size in kilo bytes
@@ -774,7 +774,7 @@ size_t MediaLibCleaner::File::GetFileSizeBytes() {
 * @return File size in kilo bytes
 */
 std::wstring MediaLibCleaner::File::GetFileSizeKB() {
-	return std::to_wstring(this->_file_size_bytes / 1024) + L"KB";
+	return std::to_wstring(this->d_file_size_bytes / 1024) + L"KB";
 }
 /**
 * Method returns file size in mega bytes
@@ -782,7 +782,63 @@ std::wstring MediaLibCleaner::File::GetFileSizeKB() {
 * @return File size in mega bytes
 */
 std::wstring MediaLibCleaner::File::GetFileSizeMB() {
-	return std::to_wstring(this->_file_size_bytes / 1048576) + L"MB";
+	return std::to_wstring(this->d_file_size_bytes / 1048576) + L"MB";
+}
+
+
+/**
+ * Method checks if file has given tag
+ *
+ * @param[in] tag Tag name, without % signs!
+ * @param[in] val (Optional) value of the tag
+ *
+ * @return True if tag is present (and has given value), false otherwise
+ */
+bool MediaLibCleaner::File::HasTag(std::wstring tag, std::wstring val)
+{
+	// debug
+	std::wcout << L"Checking for tag: '" + tag + L"' with possible value: '" + val + L"'" << std::endl;
+	return true;
+}
+
+/**
+* Method checks if file has given tag
+*
+* @param[in] nname New file name
+*
+* @return Status of renaming operation
+*/
+bool MediaLibCleaner::File::Rename(std::wstring nname)
+{
+	// debug
+	std::wcout << L"Renaming file to: '" << nname << L"'" << std::endl;
+	return true;
+}
+
+/**
+* Method checks if file has given tag
+*
+* @param[in] nloc New file location
+*
+* @return Status of move operation
+*/
+bool MediaLibCleaner::File::Move(std::wstring nloc)
+{
+	// debug
+	std::wcout << L"Moving file to: '" << nloc << L"'" << std::endl;
+	return true;
+}
+
+/**
+* Method checks if file has given tag
+*
+* @return Status of delete operation
+*/
+bool MediaLibCleaner::File::Delete()
+{
+	// debug
+	std::wcout << L"Deleting file" << std::endl;
+	return true;
 }
 
 
@@ -796,7 +852,7 @@ bool MediaLibCleaner::File::IsInitiated() {
 }
 
 MediaLibCleaner::DFC* MediaLibCleaner::File::GetDFC() {
-	return this->_dfc;
+	return this->d_dfc;
 }
 
 
@@ -816,17 +872,17 @@ MediaLibCleaner::FilesAggregator::~FilesAggregator() {
 }
 
 void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *_file) {
-	this->_files.push_back(_file);
+	this->d_files.push_back(_file);
 }
 
-MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring _filepath) {
+MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring filepath) {
 	std::list<MediaLibCleaner::File*>::iterator nd = this->end();
 	for (std::list<MediaLibCleaner::File*>::iterator it = this->begin(); it != nd; it++) {
-		if ((*it)->GetPath() == _filepath) {
+		if ((*it)->GetPath() == filepath) {
 			return *it;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::CurrentFile() {
@@ -837,17 +893,27 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::CurrentFile() {
 }
 
 std::list<MediaLibCleaner::File*>::iterator MediaLibCleaner::FilesAggregator::begin() {
-	return this->_files.begin();
+	return this->d_files.begin();
 }
 
 std::list<MediaLibCleaner::File*>::iterator MediaLibCleaner::FilesAggregator::end() {
-	return this->_files.end();
+	return this->d_files.end();
 }
 
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
-	if (this->cfile == (this->CurrentFile()->GetDFC()->GetCounter() - 1)) return NULL;
+	if (this->cfile == (this->CurrentFile()->GetDFC()->GetCounter() - 1)) return nullptr;
 
 	this->cfile++;
+
+	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
+	std::advance(it, this->cfile);
+
+	return *it;
+}
+
+MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::re_set()
+{
+	this->cfile = 0;
 
 	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
 	std::advance(it, this->cfile);
@@ -859,8 +925,8 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
 
 
 
-MediaLibCleaner::DFC::DFC(std::string _path) {
-	this->path = _path;
+MediaLibCleaner::DFC::DFC(std::string path) {
+	this->path = path;
 	this->count = 0;
 }
 
@@ -877,39 +943,3 @@ std::string MediaLibCleaner::DFC::GetPath() {
 void MediaLibCleaner::DFC::IncCount() {
 	this->count++;
 }
-
-
-
-
-
-
-
-/*MediaLibCleaner::DFCAggregator::DFCAggregator() {}
-MediaLibCleaner::DFCAggregator::~DFCAggregator() {
-	std::list<MediaLibCleaner::DFC*>::iterator nd = this->end();
-	for (std::list<MediaLibCleaner::DFC*>::iterator it = this->begin(); it != nd; it++) {
-		delete *it;
-	}
-}
-
-void MediaLibCleaner::DFCAggregator::AddDirectory(MediaLibCleaner::DFC *_dfc) {
-	this->_directories.push_back(_dfc);
-}
-
-MediaLibCleaner::DFC* MediaLibCleaner::DFCAggregator::GetDirectory(std::string _dirpath) {
-	std::list<MediaLibCleaner::DFC*>::iterator nd = this->end();
-	for (std::list<MediaLibCleaner::DFC*>::iterator it = this->begin(); it != nd; it++) {
-		if ((*it)->GetPath() == _dirpath) {
-			return *it;
-		}
-	}
-	return NULL;
-}
-
-std::list<MediaLibCleaner::DFC*>::iterator MediaLibCleaner::DFCAggregator::begin() {
-	return this->_directories.begin();
-}
-
-std::list<MediaLibCleaner::DFC*>::iterator MediaLibCleaner::DFCAggregator::end() {
-	return this->_directories.end();
-}*/

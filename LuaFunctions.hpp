@@ -13,4 +13,10 @@
 
 int lua_IsAudioFile(lua_State *, MediaLibCleaner::File*);
 int lua_SetTags(lua_State *, MediaLibCleaner::File*);
+int lua_SetRequiredTags(lua_State *, MediaLibCleaner::File*);
+int lua_CheckTagsValues(lua_State *, MediaLibCleaner::File*);
+int lua_Rename(lua_State *, MediaLibCleaner::File*);
+int lua_Move(lua_State *, MediaLibCleaner::File*);
+int lua_Delete(lua_State *, MediaLibCleaner::File*);
+
 void lua_ErrorReporting(lua_State *, int);
