@@ -5,13 +5,18 @@
 #include <ctime> // for time()
 #include <map> // for std::multimap
 #include <exception> // exceptions
+#include <locale> // for setlocale()
+#include <codecvt>
 
 #include <lua/lua.hpp>
 
 #include <boost/filesystem.hpp>
+#include <boost/locale.hpp>
 
 #include "LuaFunctions.hpp"
 #include "helpers.hpp"
+
+#include <Windows.h>
 
 
 

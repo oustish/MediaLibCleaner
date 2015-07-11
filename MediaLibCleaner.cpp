@@ -3,7 +3,9 @@
  * @author Szymon Oracki <szymon.oracki@oustish.pl>
  * @version 0.1
  *
- * This file contains definitions of all methods for MediaLibCleaner::File class
+ * This file contains definitions of all methods for MediaLibCleaner namespace
+ *
+ * @todo check in each MediaLibCleaner::File::? method if file was initialized and return values only if it was
  */
 
 #include "MediaLibCleaner.hpp"
@@ -17,7 +19,7 @@
  * @param[in] path  Path to audio file this instance will represent
  * @param[in] dfc	An instance of MediaLibCleaner::DFC
  */
-MediaLibCleaner::File::File(std::string path, MediaLibCleaner::DFC* dfc)
+MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 {
 	this->_path = path;
 	this->_dfc = dfc;
@@ -29,42 +31,32 @@ MediaLibCleaner::File::File(std::string path, MediaLibCleaner::DFC* dfc)
 
 	std::unique_ptr <TagLib::FileRef> f(new TagLib::FileRef(TagLib::FileName(this->_path.c_str())));
 
+	this->fileref.swap(f);
+
 	// check if file is in fact audio file (as it sometimes cannot be!)
 	// effect: this->isInitalized == false
-	if (f->isNull()) return;
+	if (this->fileref->isNull()) return;
 	
 	// SONG INFO
-	this->artist = f->tag()->artist();
-	this->title = f->tag()->title();
-	this->album = f->tag()->album();
-	this->genre = f->tag()->genre();
-	this->comment = f->tag()->comment();
-	this->track = f->tag()->track();
-	this->year = f->tag()->year();
-	//this->albumartist = 
-	//this->bpm = 
-	//this->copyright = 
-	//this->language = 
-	//this->length = 
-	//this->mood = 
-	//this->origalbum = 
-	//this->origartist = 
-	//this->origfilename = 
-	//this->origyear = 
-	//this->publisher = 
-	//this->unsyncedlyrics = 
-	//this->www = 
+	this->artist = this->fileref->tag()->artist();
+	this->title = this->fileref->tag()->title();
+	this->album = this->fileref->tag()->album();
+	this->genre = this->fileref->tag()->genre();
+	this->comment = this->fileref->tag()->comment();
+	this->track = this->fileref->tag()->track();
+	this->year = this->fileref->tag()->year();
+	// rest of aliases defined below
 
 	// TECHNICAL INFO
-	this->_bitrate = f->audioProperties()->bitrate();
+	this->_bitrate = this->fileref->audioProperties()->bitrate();
 	//this->_codec = 
 	//this->_cover_mimetype = 
 	//this->_cover_size = 
 	//this->_cover_type = 
 	//this->_covers = 
-	this->_channels = f->audioProperties()->channels();
-	this->_sampleRate = f->audioProperties()->sampleRate();
-	this->_length = f->audioProperties()->length();
+	this->_channels = this->fileref->audioProperties()->channels();
+	this->_sampleRate = this->fileref->audioProperties()->sampleRate();
+	this->_length = this->fileref->audioProperties()->length();
 
 
 	// BOOST INIT FOR PATH INFORMATIONS
@@ -74,26 +66,178 @@ MediaLibCleaner::File::File(std::string path, MediaLibCleaner::DFC* dfc)
 	fs::path pDirParentDir = fileParentDir.parent_path();
 
 	// PATH INFO
-	this->_directory = fileParentDir.filename().string();
-	this->_ext = temp.extension().string();					this->_ext = this->_ext.substr(1);
-	this->_filename = temp.filename().string();				this->_filename = this->_filename.substr(0, this->_filename.length() - this->_ext.length() - 1);
-	this->_folderpath = fileParentDir.string();
-	this->_parent_dir = pDirParentDir.filename().string();
+	this->_directory = fileParentDir.filename().wstring();
+	this->_ext = temp.extension().wstring();					this->_ext = this->_ext.substr(1);
+	this->_filename = temp.filename().wstring();				this->_filename = this->_filename.substr(0, this->_filename.length() - this->_ext.length() - 1);
+	this->_folderpath = fileParentDir.wstring();
+	this->_parent_dir = pDirParentDir.filename().wstring();
 	// _path is setted before - required
 #ifdef WIN32
-	this->_volume = temp.root_name().string();
+	this->_volume = temp.root_name().wstring();
 #endif
 
 	// STAT INIT FOR DATE INFORMATION
 	// WARNING: MAY ONLY WORK IN WINDOWS!!!
 
 	struct stat attrib;
-	stat(this->_path.c_str(), &attrib);
+	stat(ws2s(this->_path).c_str(), &attrib);
 
 	// FILE PROPERTIES
 	this->_file_create_datetime_raw = attrib.st_ctime;
 	this->_file_mod_datetime_raw = attrib.st_mtime;
 	this->_file_size_bytes = fs::file_size(temp);
+
+
+	TagLib::FileRef *fr = this->fileref.release();
+	delete fr;
+
+	// CAN WORK WITH THE REST OF ALIASES NOW,
+	// SINCE _EXT IS AVALIABLE
+
+	//check for file type
+	
+	if (this->_ext == L"mp3") {
+		std::unique_ptr<TagLib::MPEG::File> temp(new TagLib::MPEG::File(TagLib::FileName(this->_path.c_str())));
+		temp.swap(this->taglib_file_mp3);
+	}
+	else if (this->_ext == L"ogg") {
+		std::unique_ptr<TagLib::Ogg::Vorbis::File> temp(new TagLib::Ogg::Vorbis::File(TagLib::FileName(this->_path.c_str())));
+		temp.swap(this->taglib_file_ogg);
+	}
+	else if (this->_ext == L"flac") {
+		std::unique_ptr<TagLib::Ogg::FLAC::File> temp(new TagLib::Ogg::FLAC::File(TagLib::FileName(this->_path.c_str())));
+		temp.swap(this->taglib_file_flac);
+	}
+	else if (this->_ext == L"m4a") {
+		std::unique_ptr<TagLib::MP4::File> temp(new TagLib::MP4::File(TagLib::FileName(this->_path.c_str())));
+		temp.swap(this->taglib_file_m4a);
+	}
+	else { return; }
+
+
+	if (this->_ext == L"mp3") { // ID3v1, ID3v2 or APE tags present
+		TagLib::ID3v1::Tag *id3v1tag = this->taglib_file_mp3->ID3v1Tag();
+		TagLib::ID3v2::Tag *id3v2tag = this->taglib_file_mp3->ID3v2Tag();
+		TagLib::APE::Tag *apetag = this->taglib_file_mp3->APETag();
+
+		if (id3v2tag) {
+			TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
+			for (; it != id3v2tag->frameList().end(); it++) {
+				std::wstring name = TagLib::String((*it)->frameID()).toWString();
+				std::wstring value = (*it)->toString().toWString();
+
+				if (name == L"TPE2") {
+					this->albumartist = value;
+				}
+				else if (name == L"TBPM") {
+					this->bpm = value;
+				}
+				else if (name == L"TCOP") {
+					this->copyright = value;
+				}
+				else if (name == L"TLAN") {
+					this->language = value;
+				}
+				else if (name == L"TLEN") {
+					this->length = value;
+				}
+				else if (name == L"TMOO") {
+					this->mood = value;
+				}
+				else if (name == L"TXXX" && value.substr(0, 6) == L"[MOOD]") {
+					this->mood = value.substr(12); // format: [MOOD] MOOD %mood%
+				}
+				else if (name == L"TOAL") {
+					this->origalbum = value;
+				}
+				else if (name == L"TOPE") {
+					this->origartist = value;
+				}
+				else if (name == L"TOFN") {
+					this->origfilename = value;
+				}
+				else if (name == L"TDOR") {
+					this->origyear = value;
+				}
+				else if (name == L"TPUB") {
+					this->publisher = value;
+				}
+				else if (name == L"USLT") {
+					this->unsyncedlyrics = value;
+				}
+				else if (name == L"WXXX" && value.substr(0, 2) == L"[]") {
+					this->www = value.substr(3);// format: [] www
+				}
+			}
+		}
+		else if (apetag) {
+			TagLib::APE::ItemListMap tags = apetag->itemListMap();
+
+			this->albumartist = tags["ALBUMARTIST"].toString();
+			this->bpm = tags["BPM"].toString();
+			this->copyright = tags["COPYRIGHT"].toString();
+			this->language = tags["LANGUAGE"].toString();
+			this->length = tags["LENGTH"].toString();
+			this->mood = tags["MOOD"].toString();
+			this->origalbum = tags["ORIGALBUM"].toString();
+			this->origartist = tags["ORIGARTIST"].toString();
+			this->origfilename = tags["ORIGFILENAME"].toString();
+			this->origyear = tags["ORIGYEAR"].toString();
+			this->publisher = tags["PUBLISHER"].toString();
+			this->unsyncedlyrics = tags["UNSYNCEDLYRICS"].toString();
+			this->www = tags["WWW"].toString();
+		}
+		else if (id3v1tag) {
+			// ID3v1 dosen't have any of the extended tags
+			this->albumartist = "";
+			this->bpm = "";
+			this->copyright = "";
+			this->language = "";
+			this->length = "";
+			this->mood = "";
+			this->origalbum = "";
+			this->origartist = "";
+			this->origfilename = "";
+			this->origyear = "";
+			this->publisher = "";
+			this->unsyncedlyrics = "";
+			this->www = "";
+		}
+	}
+	else if (this->_ext == L"ogg") {
+		TagLib::PropertyMap tags = this->taglib_file_ogg->tag()->properties();
+
+		for (auto it = tags.begin(); it != tags.end(); it++) {
+			//std::wcout << it->first.toWString() << " - \"" << it->second.toString().toWString() << "\"" << std::endl;
+
+			if (it->first.toWString() == L"ALBUMARTIST")
+				this->albumartist = it->second.toString().toWString();
+			else if (it->first.toWString() == L"BPM")
+				this->bpm = it->second.toString().toWString();
+			else if (it->first.toWString() == L"COPYRIGHT")
+				this->copyright = it->second.toString().toWString();
+			else if (it->first.toWString() == L"LANGUAGE")
+				this->language = it->second.toString().toWString();
+			else if (it->first.toWString() == L"LENGTH")
+				this->length = it->second.toString().toWString();
+			else if (it->first.toWString() == L"MOOD")
+				this->mood = it->second.toString().toWString();
+			else if (it->first.toWString() == L"ORIGALBUM")
+				this->origalbum = it->second.toString().toWString();
+			else if (it->first.toWString() == L"ORIGARTIST")
+				this->origartist = it->second.toString().toWString();
+			else if (it->first.toWString() == L"ORIGFILENAME")
+				this->origfilename = it->second.toString().toWString();
+			else if (it->first.toWString() == L"ORIGYEAR")
+				this->origyear = it->second.toString().toWString();
+			else if (it->first.toWString() == L"ORGANIZATION") // publisher
+				this->publisher = it->second.toString().toWString();
+			else if (it->first.toWString() == L"UNSYNCEDLYRICS")
+				this->unsyncedlyrics = it->second.toString().toWString();
+			else if (it->first.toWString() == L"URL" || it->first.toWString() == L"WWW")
+				this->www = it->second.toString().toWString();
+		}
+	}
 
 
 	// OTHER
@@ -112,181 +256,221 @@ MediaLibCleaner::File::~File() {
 /**
  * Method allowing to read \%artist% tag from an audio file
  *
- * @return Artist tag
+ * @return Artist tag or empty string if file is not audio file
  */
-std::string MediaLibCleaner::File::GetArtist() {
-	return this->artist.toCString();
+std::wstring MediaLibCleaner::File::GetArtist() {
+	if (this->isInitiated)
+		return this->artist.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%title% tag from an audio file
 *
-* @return Title tag
+* @return Title tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetTitle() {
-	return this->title.toCString();
+std::wstring MediaLibCleaner::File::GetTitle() {
+	if (this->isInitiated)
+		return this->title.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%album% tag from an audio file
 *
-* @return Album tag
+* @return Album tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetAlbum() {
-	return this->album.toCString();
+std::wstring MediaLibCleaner::File::GetAlbum() {
+	if (this->isInitiated)
+		return this->album.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%genre% tag from an audio file
 *
-* @return Genre tag
+* @return Genre tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetGenre() {
-	return this->genre.toCString();
+std::wstring MediaLibCleaner::File::GetGenre() {
+	if (this->isInitiated)
+		return this->genre.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%comment% tag from an audio file
 *
-* @return Comment tag
+* @return Comment tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetComment() {
-	return this->comment.toCString();
+std::wstring MediaLibCleaner::File::GetComment() {
+	if (this->isInitiated)
+		return this->comment.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%track% tag from an audio file
 *
-* @return Track tag
+* @return Track tag or -1 if file is not audio file
 */
 int MediaLibCleaner::File::GetTrack() {
-	return this->track;
+	if (this->isInitiated)
+		return this->track;
+	return -1;
 }
 
 /**
 * Method allowing to read \%year% tag from an audio file
 *
-* @return Year tag
+* @return Year tag or -1 if file is not audio file
 */
 int MediaLibCleaner::File::GetYear() {
-	return this->year;
+	if (this->isInitiated)
+		return this->year;
+	return -1;
 }
 
 /**
 * Method allowing to read \%albumartist% tag from an audio file
 *
-* @return Album artist tag
+* @return Album artist tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetAlbumArtist() {
-	return this->albumartist.toCString();
+std::wstring MediaLibCleaner::File::GetAlbumArtist() {
+	if (this->isInitiated)
+		return this->albumartist.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%bpm% tag from an audio file
 *
-* @return BPM tag
+* @return BPM tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetBPM() {
-	return this->bpm.toCString();
+std::wstring MediaLibCleaner::File::GetBPM() {
+	if (this->isInitiated)
+		return this->bpm.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%copyright% tag from an audio file
 *
-* @return Copyright tag
+* @return Copyright tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetCopyright() {
-	return this->copyright.toCString();
+std::wstring MediaLibCleaner::File::GetCopyright() {
+	if (this->isInitiated)
+		return this->copyright.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%language% tag from an audio file
 *
-* @return Language tag
+* @return Language tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetLanguage() {
-	return this->language.toCString();
+std::wstring MediaLibCleaner::File::GetLanguage() {
+	if (this->isInitiated)
+		return this->language.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%length% tag from an audio file
 *
-* @return Length tag
+* @return Length tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetTagLength() {
-	return this->length.toCString();
+std::wstring MediaLibCleaner::File::GetTagLength() {
+	if (this->isInitiated)
+		return this->length.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%mood% tag from an audio file
 *
-* @return Mood tag
+* @return Mood tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetMood() {
-	return this->mood.toCString();
+std::wstring MediaLibCleaner::File::GetMood() {
+	if (this->isInitiated)
+		return this->mood.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%origalbum% tag from an audio file
 *
-* @return Original album tag
+* @return Original album tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetOrigAlbum() {
-	return this->origalbum.toCString();
+std::wstring MediaLibCleaner::File::GetOrigAlbum() {
+	if (this->isInitiated)
+		return this->origalbum.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%origartist% tag from an audio file
 *
-* @return Original artist tag
+* @return Original artist tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetOrigArtist() {
-	return this->origartist.toCString();
+std::wstring MediaLibCleaner::File::GetOrigArtist() {
+	if (this->isInitiated)
+		return this->origartist.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%origfilename% tag from an audio file
 *
-* @return Original filename tag
+* @return Original filename tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetOrigFilename() {
-	return this->origfilename.toCString();
+std::wstring MediaLibCleaner::File::GetOrigFilename() {
+	if (this->isInitiated)
+		return this->origfilename.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%origyear% tag from an audio file
 *
-* @return Original year tag
+* @return Original year tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetOrigYear() {
-	return this->origyear.toCString();
+std::wstring MediaLibCleaner::File::GetOrigYear() {
+	if (this->isInitiated)
+		return this->origyear.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%publisher% tag from an audio file
 *
-* @return Publisher tag
+* @return Publisher tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetPublisher() {
-	return this->publisher.toCString();
+std::wstring MediaLibCleaner::File::GetPublisher() {
+	if (this->isInitiated)
+		return this->publisher.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%unsyncedlyrics% tag from an audio file
 *
-* @return Unsynced lyrics tag
+* @return Unsynced lyrics tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetLyricsUnsynced() {
-	return this->unsyncedlyrics.toCString();
+std::wstring MediaLibCleaner::File::GetLyricsUnsynced() {
+	if (this->isInitiated)
+		return this->unsyncedlyrics.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%www% tag from an audio file
 *
-* @return WWW tag
+* @return WWW tag or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetWWW() {
-	return this->www.toCString();
+std::wstring MediaLibCleaner::File::GetWWW() {
+	if (this->isInitiated)
+		return this->www.toWString();
+	return L"";
 }
 
 
@@ -297,107 +481,125 @@ std::string MediaLibCleaner::File::GetWWW() {
 /**
 * Method allowing to read bitrate of an audio file
 *
-* @return Bitrate (in kbps)
+* @return Bitrate (in kbps) or -1 if file is not audio file
 */
 int MediaLibCleaner::File::GetBitrate() {
-	return this->_bitrate;
+	if (this->isInitiated)
+		return this->_bitrate;
+	return -1;
 }
 
 /**
 * Method allowing to read codec of an audio file
 *
-* @return Codec id
+* @return Codec id or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetCodec() {
-	return this->_codec;
+std::wstring MediaLibCleaner::File::GetCodec() {
+	if (this->isInitiated)
+		return this->_codec;
+	return L"";
 }
 
 /**
 * Method allowing to read mimetype of first cover in an audio file
 *
-* @return Mimetype of first cover
+* @return Mimetype of first cover or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetCoverMimetype() {
-	return this->_cover_mimetype;
+std::wstring MediaLibCleaner::File::GetCoverMimetype() {
+	if (this->isInitiated)
+		return this->_cover_mimetype;
+	return L"";
 }
 
 /**
 * Method allowing to read size of first cover in an audio file
 *
-* @return Size of first cover
+* @return Size of first cover or -1 if file is not audio file
 */
 size_t MediaLibCleaner::File::GetCoverSize() {
-	return this->_cover_size;
+	if (this->isInitiated)
+		return this->_cover_size;
+	return -1;
 }
 
 /**
 * Method allowing to read type of first cover in an audio file
 *
-* @return Type of first cover
+* @return Type of first cover or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetCoverType() {
-	return this->_cover_type;
+std::wstring MediaLibCleaner::File::GetCoverType() {
+	if (this->isInitiated)
+		return this->_cover_type;
+	return L"";
 }
 
 /**
 * Method allowing to read amount of covers in an audio file
 *
-* @return Amount of covers in file
+* @return Amount of covers in file or -1 if file is not audio file
 */
 int MediaLibCleaner::File::GetCovers() {
-	return this->_covers;
+	if (this->isInitiated)
+		return this->_covers;
+	return -1;
 }
 
 /**
 * Method allowing to read amount of channels in audio file
 *
-* @return Amount of channels
+* @return Amount of channels or -1 if file is not audio file
 */
 int MediaLibCleaner::File::GetChannels() {
-	return this->_channels;
+	if (this->isInitiated)
+		return this->_channels;
+	return -1;
 }
 
 /**
 * Method allowing to read audio file sample rate
 *
-* @return Sample rate (in Hz)
+* @return Sample rate (in Hz) or -1 if file is not audio file
 */
 int MediaLibCleaner::File::GetSampleRate() {
-	return this->_sampleRate;
+	if (this->isInitiated)
+		return this->_sampleRate;
+	return -1;
 }
 
 /**
 * Method allowing to read length of an audio file as string
 *
-* @return Length of audio file in [[HH:]MM:]SS format
+* @return Length of audio file in [[HH:]MM:]SS format or empty string if file is not audio file
 */
-std::string MediaLibCleaner::File::GetLengthAsString() {
-	std::string _out = "";
-	int hours = 0, minutes = 0, seconds = 0;
+std::wstring MediaLibCleaner::File::GetLengthAsString() {
+	if (!this->isInitiated) return L"";
+
+	std::wstring _out = L"";
+	int hours = 0, minutes = 0, seconds;
 
 	if (this->_length >= 3600) { // if longer than or equal to 1 hour
 		hours = this->_length / 3600; // no rest, only full hours
 
 		if (hours < 10) {
-			_out += "0";
+			_out += L"0";
 		}
-		_out += std::to_string(hours) + ":";
+		_out += std::to_wstring(hours) + L":";
 	}
 
 	if (this->_length >= 60) { // if longer than or equal to 1 minute
 		minutes = (this->_length - hours * 3600) / 60; //  no rest, only full remaining minutes
 
 		if (minutes < 10) {
-			_out += "0";
+			_out += L"0";
 		}
-		_out += std::to_string(minutes) + ":";
+		_out += std::to_wstring(minutes) + L":";
 	}
 
 	seconds = this->_length - hours * 3600 - minutes * 60;
 	if (seconds < 10) {
-		_out += "0";
+		_out += L"0";
 	}
-	_out += std::to_string(seconds);
+	_out += std::to_wstring(seconds);
 
 	return _out;
 }
@@ -405,10 +607,12 @@ std::string MediaLibCleaner::File::GetLengthAsString() {
 /**
 * Method allowing to read length of an audio file
 *
-* @return Bitrate in kbps
+* @return Bitrate in kbps or -1 if file is not audio file
 */
 int MediaLibCleaner::File::GetLength() {
-	return this->_length;
+	if (this->isInitiated)
+		return this->_length;
+	return -1;
 }
 
 
@@ -417,11 +621,11 @@ int MediaLibCleaner::File::GetLength() {
 
 // PATH INFO
 /**
-* Method returns full name of direcotry the file resides in
+* Method returns full name of directory the file resides in
 *
 * @return Directory name containing file
 */
-std::string MediaLibCleaner::File::GetDirectory() {
+std::wstring MediaLibCleaner::File::GetDirectory() {
 	return this->_directory;
 }
 /**
@@ -429,7 +633,7 @@ std::string MediaLibCleaner::File::GetDirectory() {
 *
 * @return File extension
 */
-std::string MediaLibCleaner::File::GetExt() {
+std::wstring MediaLibCleaner::File::GetExt() {
 	return this->_ext;
 }
 /**
@@ -437,7 +641,7 @@ std::string MediaLibCleaner::File::GetExt() {
 *
 * @return Filename without extension
 */
-std::string MediaLibCleaner::File::GetFilename() {
+std::wstring MediaLibCleaner::File::GetFilename() {
 	return this->_filename;
 }
 /**
@@ -445,15 +649,15 @@ std::string MediaLibCleaner::File::GetFilename() {
 *
 * @return Filename with extensions
 */
-std::string MediaLibCleaner::File::GetFilenameExt() {
-	return (this->_filename + "." + this->_ext);
+std::wstring MediaLibCleaner::File::GetFilenameExt() {
+	return (this->_filename + L"." + this->_ext);
 }
 /**
 * Method returns path to directory that contains the file
 *
 * @return Path to directory containing file
 */
-std::string MediaLibCleaner::File::GetFolderPath() {
+std::wstring MediaLibCleaner::File::GetFolderPath() {
 	return this->_folderpath;
 }
 /**
@@ -461,7 +665,7 @@ std::string MediaLibCleaner::File::GetFolderPath() {
 *
 * @return Name of parent dir for %_directory% dir
 */
-std::string MediaLibCleaner::File::GetParentDir() {
+std::wstring MediaLibCleaner::File::GetParentDir() {
 	return this->_parent_dir;
 }
 /**
@@ -469,7 +673,7 @@ std::string MediaLibCleaner::File::GetParentDir() {
 *
 * @return Full path to audio file
 */
-std::string MediaLibCleaner::File::GetPath() {
+std::wstring MediaLibCleaner::File::GetPath() {
 	return this->_path;
 }
 
@@ -479,7 +683,7 @@ std::string MediaLibCleaner::File::GetPath() {
 	*
 	* @return Letter followed by colon of volume the file resides on
 	*/
-	std::string MediaLibCleaner::File::GetVolume() {
+	std::wstring MediaLibCleaner::File::GetVolume() {
 		return this->_volume;
 	}
 #endif
@@ -492,16 +696,16 @@ std::string MediaLibCleaner::File::GetPath() {
 *
 * @return File created date in ISO 8601 format
 */
-std::string MediaLibCleaner::File::GetFileCreateDate() {
-	return get_date_iso_8601(this->_file_create_datetime_raw);
+std::wstring MediaLibCleaner::File::GetFileCreateDate() {
+	return get_date_iso_8601_wide(this->_file_create_datetime_raw);
 }
 /**
 * Method returns file created date in RFC 2822 format
 *
 * @return File created date in RFC 2822 format
 */
-std::string MediaLibCleaner::File::GetFileCreateDatetime() {
-	return get_date_rfc_2822(this->_file_create_datetime_raw);
+std::wstring MediaLibCleaner::File::GetFileCreateDatetime() {
+	return get_date_rfc_2822_wide(this->_file_create_datetime_raw);
 }
 /**
 * Method returns file created date in unix timestamp format
@@ -516,16 +720,16 @@ time_t MediaLibCleaner::File::GetFileCreateDatetimeRaw() {
 *
 * @return File modified date in ISO 8601 format
 */
-std::string MediaLibCleaner::File::GetFileModDate() {
-	return get_date_iso_8601(this->_file_mod_datetime_raw);
+std::wstring MediaLibCleaner::File::GetFileModDate() {
+	return get_date_iso_8601_wide(this->_file_mod_datetime_raw);
 }
 /**
 * Method returns file modified date in RFC 2822 format
 *
 * @return File modified date in RFC 2822 format
 */
-std::string MediaLibCleaner::File::GetFileModDatetime() {
-	return get_date_rfc_2822(this->_file_mod_datetime_raw);
+std::wstring MediaLibCleaner::File::GetFileModDatetime() {
+	return get_date_rfc_2822_wide(this->_file_mod_datetime_raw);
 }
 /**
 * Method returns file modified date in unix timestamp format
@@ -540,11 +744,11 @@ time_t MediaLibCleaner::File::GetFileModDatetimeRaw() {
 *
 * @return File size in human readable format
 */
-std::string MediaLibCleaner::File::GetFileSize() {
+std::wstring MediaLibCleaner::File::GetFileSize() {
 	float temp = this->_file_size_bytes / 1048576; // MB
 
 	if (this->_file_size_bytes <= 1023) { // B
-		return std::to_string(this->_file_size_bytes) + "B";
+		return std::to_wstring(this->_file_size_bytes) + L"B";
 	}
 	else if (this->_file_size_bytes > 1023 && this->_file_size_bytes <= 1048575) { // KB
 		return this->GetFileSizeKB();
@@ -553,7 +757,7 @@ std::string MediaLibCleaner::File::GetFileSize() {
 		return this->GetFileSizeMB();
 	}
 	else { // GB
-		return std::to_string(temp / 1024);
+		return std::to_wstring(temp / 1024);
 	}
 }
 /**
@@ -569,18 +773,16 @@ size_t MediaLibCleaner::File::GetFileSizeBytes() {
 *
 * @return File size in kilo bytes
 */
-std::string MediaLibCleaner::File::GetFileSizeKB() {
-	return std::to_string(this->_file_size_bytes / 1024) + "KB";
+std::wstring MediaLibCleaner::File::GetFileSizeKB() {
+	return std::to_wstring(this->_file_size_bytes / 1024) + L"KB";
 }
 /**
 * Method returns file size in mega bytes
 *
 * @return File size in mega bytes
 */
-std::string MediaLibCleaner::File::GetFileSizeMB() {
-	std::string t = std::to_string(this->_file_size_bytes / 1048576) + "MB";
-	
-	return t;
+std::wstring MediaLibCleaner::File::GetFileSizeMB() {
+	return std::to_wstring(this->_file_size_bytes / 1048576) + L"MB";
 }
 
 
@@ -617,7 +819,7 @@ void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *_file) {
 	this->_files.push_back(_file);
 }
 
-MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::string _filepath) {
+MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring _filepath) {
 	std::list<MediaLibCleaner::File*>::iterator nd = this->end();
 	for (std::list<MediaLibCleaner::File*>::iterator it = this->begin(); it != nd; it++) {
 		if ((*it)->GetPath() == _filepath) {
