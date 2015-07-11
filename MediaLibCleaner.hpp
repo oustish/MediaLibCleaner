@@ -5,9 +5,45 @@
  *
  * File contains declaration of every class, field and method in MediaLibCleaner namespace
  */
+#include <iostream>
+#include <stdlib.h>
+
+#include <boost/locale.hpp>
 
 #include <taglib/taglib.h>
 #include <taglib/fileref.h>
+#include <taglib/mpegfile.h>
+#include <taglib/oggfile.h>
+#include <taglib/vorbisfile.h>
+#include <taglib/oggflacfile.h>
+#include <taglib/mp4file.h>
+#include <taglib/tbytevector.h>
+#include <taglib/tpropertymap.h>
+#include <taglib/tmap.h>
+
+// ID3v1 headers
+#include <taglib/id3v1genres.h>
+#include <taglib/id3v1tag.h>
+
+// ID3v2 headers
+#include <taglib/id3v2header.h>
+#include <taglib/id3v2frame.h>
+#include <taglib/id3v2tag.h>
+#include <taglib/attachedpictureframe.h>
+
+// Xiph headers
+#include <taglib/xiphcomment.h>
+
+// FLAC/Xiph headers
+#include <taglib/flacpicture.h>
+
+// MP4 headers
+#include <taglib/mp4tag.h>
+#include <taglib/mp4coverart.h>
+
+// APE headers
+#include <taglib/apetag.h>
+
 
 #include <boost/filesystem.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -16,6 +52,7 @@
 #include <string>
 #include <sys/stat.h>
 #include <time.h>
+#include <memory>
 
 #include "helpers.hpp"
 
@@ -54,83 +91,83 @@ namespace MediaLibCleaner
 		
 		// SONG INFO
 		/**
-		 * An TagLib::String object containing %artist% name written in audio file
+		 * An TagLib::String object containing \%artist% name written in audio file
 		 */
 		TagLib::String artist;
 		/**
-		* An TagLib::String object containing %title% written in audio file
+		* An TagLib::String object containing \%title% written in audio file
 		*/
 		TagLib::String title;
 		/**
-		* An TagLib::String object containing %album% name written in audio file
+		* An TagLib::String object containing \%album% name written in audio file
 		*/
 		TagLib::String album;
 		/**
-		* An TagLib::String object containing %genre% written in audio file
+		* An TagLib::String object containing \%genre% written in audio file
 		*/
 		TagLib::String genre;
 		/**
-		* An TagLib::String object containing %comment% written in audio file
+		* An TagLib::String object containing \%comment% written in audio file
 		*/
 		TagLib::String comment;
 		/**
-		* An TagLib::uint object containing %track% number written in audio file
+		* An TagLib::uint object containing \%track% number written in audio file
 		*/
 		TagLib::uint track;
 		/**
-		* An TagLib::uint object containing release %year% written in audio file
+		* An TagLib::uint object containing release \%year% written in audio file
 		*/
 		TagLib::uint year;
 		/**
-		* An TagLib::String object containing %albumartist% written in audio file
+		* An TagLib::String object containing \%albumartist% written in audio file
 		*/
 		TagLib::String albumartist;
 		/**
-		* An TagLib::String object containing %bpm% written in audio file
+		* An TagLib::String object containing \%bpm% written in audio file
 		*/
 		TagLib::String bpm;
 		/**
-		* An TagLib::String object containing %copyright% written in audio file
+		* An TagLib::String object containing \%copyright% written in audio file
 		*/
 		TagLib::String copyright;
 		/**
-		* An TagLib::String object containing %language% written in audio file
+		* An TagLib::String object containing \%language% written in audio file
 		*/
 		TagLib::String language;
 		/**
-		* An TagLib::String object containing %length% written in audio file
+		* An TagLib::String object containing \%length% written in audio file
 		*/
 		TagLib::String length;
 		/**
-		* An TagLib::String object containing %mood% written in audio file
+		* An TagLib::String object containing \%mood% written in audio file
 		*/
 		TagLib::String mood;
 		/**
-		* An TagLib::String object containing %origalbum% written in audio file
+		* An TagLib::String object containing \%origalbum% written in audio file
 		*/
 		TagLib::String origalbum;
 		/**
-		* An TagLib::String object containing %origartist% written in audio file
+		* An TagLib::String object containing \%origartist% written in audio file
 		*/
 		TagLib::String origartist;
 		/**
-		* An TagLib::String object containing %origfilename% written in audio file
+		* An TagLib::String object containing \%origfilename% written in audio file
 		*/
 		TagLib::String origfilename;
 		/**
-		* An TagLib::String object containing %origyear% written in audio file
+		* An TagLib::String object containing \%origyear% written in audio file
 		*/
 		TagLib::String origyear;
 		/**
-		* An TagLib::String object containing %publisher% written in audio file
+		* An TagLib::String object containing \%publisher% written in audio file
 		*/
 		TagLib::String publisher;
 		/**
-		* An TagLib::String object containing %unsyncedlyrics% written in audio file
+		* An TagLib::String object containing \%unsyncedlyrics% written in audio file
 		*/
 		TagLib::String unsyncedlyrics;
 		/**
-		* An TagLib::String object containing %www% written in audio file
+		* An TagLib::String object containing \%www% written in audio file
 		*/
 		TagLib::String www;
 
@@ -144,11 +181,11 @@ namespace MediaLibCleaner
 		/**
 		* An int containing information about audio file codec
 		*/
-		std::string _codec;
+		std::wstring _codec;
 		/**
 		* An int containing information about audio file first cover mimetype
 		*/
-		std::string _cover_mimetype;
+		std::wstring _cover_mimetype;
 		/**
 		* An int containing information about audio file first cover size (in bytes)
 		*/
@@ -156,7 +193,7 @@ namespace MediaLibCleaner
 		/**
 		* An int containing information about audio file first cover type
 		*/
-		std::string _cover_type;
+		std::wstring _cover_type;
 		/**
 		* An int containing information about audio file covers count
 		*/
@@ -181,33 +218,33 @@ namespace MediaLibCleaner
 		/**
 		* An std::string containing full name of directory file resides in
 		*/
-		std::string _directory = "";
+		std::wstring _directory = L"";
 		/**
 		* An std::string containing file extension
 		*/
-		std::string _ext = "";
+		std::wstring _ext = L"";
 		/**
 		* An std::string containing file name (without extension)
 		*/
-		std::string _filename = "";
+		std::wstring _filename = L"";
 		/**
 		* An std::string containing full path of directory file resides in
 		*/
-		std::string _folderpath = "";
+		std::wstring _folderpath = L"";
 		/**
 		* An std::string containing name of parent directory
 		*/
-		std::string _parent_dir = "";
+		std::wstring _parent_dir = L"";
 		/**
 		* An std::string containing full path to audio file
 		*/
-		std::string _path = "";
+		std::wstring _path = L"";
 
 #ifdef WIN32
 		/**
 		* An std::string containing volume letter (Windows only)
 		*/
-		std::string _volume = "";
+		std::wstring _volume = L"";
 #endif
 
 
@@ -237,45 +274,51 @@ namespace MediaLibCleaner
 
 		DFC* _dfc = NULL;
 
+		std::unique_ptr<TagLib::FileRef> fileref;
+
+		std::unique_ptr<TagLib::MPEG::File> taglib_file_mp3;
+		std::unique_ptr<TagLib::Ogg::Vorbis::File> taglib_file_ogg;
+		std::unique_ptr<TagLib::Ogg::FLAC::File> taglib_file_flac;
+		std::unique_ptr<TagLib::MP4::File> taglib_file_m4a;
+
 	public:
 
-		File(std::string, MediaLibCleaner::DFC*);
+		File(std::wstring, MediaLibCleaner::DFC*);
 		~File();
 
 
 
 		// SONG INFO
-		std::string GetArtist();
-		std::string GetTitle();
-		std::string GetAlbum();
-		std::string GetGenre();
-		std::string GetComment();
+		std::wstring GetArtist();
+		std::wstring GetTitle();
+		std::wstring GetAlbum();
+		std::wstring GetGenre();
+		std::wstring GetComment();
 		int GetTrack();
 		int GetYear();
-		std::string GetAlbumArtist();
-		std::string GetBPM();
-		std::string GetCopyright();
-		std::string GetLanguage();
-		std::string GetTagLength();
-		std::string GetMood();
-		std::string GetOrigAlbum();
-		std::string GetOrigArtist();
-		std::string GetOrigFilename();
-		std::string GetOrigYear();
-		std::string GetPublisher();
-		std::string GetLyricsUnsynced();
-		std::string GetWWW();
-
+		std::wstring GetAlbumArtist();
+		std::wstring GetBPM();
+		std::wstring GetCopyright();
+		std::wstring GetLanguage();
+		std::wstring GetTagLength();
+		std::wstring GetMood();
+		std::wstring GetOrigAlbum();
+		std::wstring GetOrigArtist();
+		std::wstring GetOrigFilename();
+		std::wstring GetOrigYear();
+		std::wstring GetPublisher();
+		std::wstring GetLyricsUnsynced();
+		std::wstring GetWWW();
 
 
 		// TECHNICAL INFO
 		int GetBitrate();
-		std::string GetCodec();
-		std::string GetCoverMimetype();
+		std::wstring GetCodec();
+		std::wstring GetCoverMimetype();
 		size_t GetCoverSize();
-		std::string GetCoverType();
+		std::wstring GetCoverType();
 		int GetCovers();
-		std::string GetLengthAsString();
+		std::wstring GetLengthAsString();
 		int GetLength();
 		int GetChannels();
 		int GetSampleRate();
@@ -283,29 +326,29 @@ namespace MediaLibCleaner
 
 
 		// PATH INFO
-		std::string GetDirectory();
-		std::string GetExt();
-		std::string GetFilename();
-		std::string GetFilenameExt();
-		std::string GetFolderPath();
-		std::string GetParentDir();
-		std::string GetPath();
+		std::wstring GetDirectory();
+		std::wstring GetExt();
+		std::wstring GetFilename();
+		std::wstring GetFilenameExt();
+		std::wstring GetFolderPath();
+		std::wstring GetParentDir();
+		std::wstring GetPath();
 #ifdef WIN32
-		std::string GetVolume();
+		std::wstring GetVolume();
 #endif
 		
 
 		// FILE PROPERITES
-		std::string GetFileCreateDate();
-		std::string GetFileCreateDatetime();
+		std::wstring GetFileCreateDate();
+		std::wstring GetFileCreateDatetime();
 		time_t GetFileCreateDatetimeRaw();
-		std::string GetFileModDate();
-		std::string GetFileModDatetime();
+		std::wstring GetFileModDate();
+		std::wstring GetFileModDatetime();
 		time_t GetFileModDatetimeRaw();
-		std::string GetFileSize();
+		std::wstring GetFileSize();
 		size_t GetFileSizeBytes();
-		std::string GetFileSizeKB();
-		std::string GetFileSizeMB();
+		std::wstring GetFileSizeKB();
+		std::wstring GetFileSizeMB();
 
 
 
@@ -329,7 +372,7 @@ namespace MediaLibCleaner
 		~FilesAggregator();
 
 		void AddFile(File*);
-		File* GetFile(std::string);
+		File* GetFile(std::wstring);
 		File* CurrentFile();
 
 		std::list<File*>::iterator begin();
