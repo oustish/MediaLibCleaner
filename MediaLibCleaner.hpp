@@ -383,6 +383,6 @@ namespace MediaLibCleaner
 		std::list<File*>::iterator end();
 
 		File* next();
-		File* re_set();
+		File* rewind();
 	};
 }

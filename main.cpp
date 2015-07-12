@@ -266,15 +266,14 @@ int main(int argc, char *argv[]) {
 		// increment total_files counter if audio file
 		if (filez->IsInitiated()) total_files++;
 
-		// increment folder counter
-		if (dirpath.string() != "")
-			currdfc->IncCount();
+		// DFC counter is incremented inside MediaLibCleaner::File object
+		// where additional checks are performed
 	}
 
 
 
 	// ITERATE OVER COLLECTION AND PROCESS FILES
-	MediaLibCleaner::File* cfile = filesAggregator->re_set();
+	MediaLibCleaner::File* cfile = filesAggregator->rewind();
 	do {
 		std::wcout << std::endl << std::endl << std::endl << std::endl;
 		std::wcout << L"File: " << cfile->GetPath() << std::endl << std::endl;
@@ -318,6 +317,7 @@ int main(int argc, char *argv[]) {
 
 
 	// wait for user
+	std::wcout << L"Program ended. Standing by for user input...";
 	system("pause >NUL");
 
 	// flush and close cout and cerr, if opened previously

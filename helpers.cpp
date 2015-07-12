@@ -1,5 +1,6 @@
 #include "helpers.hpp"
 #include <oaidl.h>
+#include <stdlib.h>
 
 /**
 * Function replacing every occurence of one string with another in given string.
@@ -136,6 +137,8 @@ std::wstring get_date_rfc_2822_wide(time_t t) {
 	return s2ws(get_date_rfc_2822(t));
 }
 
+#ifdef WIN32
+
 std::string ws2s(const std::wstring& win)
 {
 	int len;
@@ -158,4 +161,38 @@ std::wstring s2ws(const std::string& in)
 	std::wstring r(buf);
 	delete[] buf;
 	return r;
+
+	
 }
+
+#else
+
+std::string ws2s(const std::wstring& win)
+{
+	int lens = win.length();
+	char* buffer = new char[lens * 3];
+
+	int ret = wcstombs(buffer, win.c_str(), sizeof(buffer));
+
+	std::string out = buffer;
+	delete[] buffer;
+
+	if (ret) return out;
+	return "";
+}
+
+std::wstring s2ws(const std::string& in)
+{
+	int lens = in.length();
+	wchar_t* buffer = new wchar_t[lens * 3];
+
+	int ret = mbstowcs(buffer, in.c_str(), sizeof(buffer));
+
+	std::wstring out = buffer;
+	delete[] buffer;
+
+	if (ret) return out;
+	return L"";
+}
+
+#endif

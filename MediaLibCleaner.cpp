@@ -33,32 +33,6 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 
 	this->fileref.swap(f);
 
-	// check if file is in fact audio file (as it sometimes cannot be!)
-	// effect: this->isInitalized == false
-	if (this->fileref->isNull()) return;
-	
-	// SONG INFO
-	this->artist = this->fileref->tag()->artist();
-	this->title = this->fileref->tag()->title();
-	this->album = this->fileref->tag()->album();
-	this->genre = this->fileref->tag()->genre();
-	this->comment = this->fileref->tag()->comment();
-	this->track = this->fileref->tag()->track();
-	this->year = this->fileref->tag()->year();
-	// rest of aliases defined below
-
-	// TECHNICAL INFO
-	this->d_bitrate = this->fileref->audioProperties()->bitrate();
-	//this->d_codec = 
-	//this->d_cover_mimetype = 
-	//this->d_cover_size = 
-	//this->d_cover_type = 
-	//this->d_covers = 
-	this->d_channels = this->fileref->audioProperties()->channels();
-	this->d_sampleRate = this->fileref->audioProperties()->sampleRate();
-	this->d_length = this->fileref->audioProperties()->length();
-
-
 	// BOOST INIT FOR PATH INFORMATIONS
 	namespace fs = boost::filesystem;
 	fs::path temp = this->d_path;
@@ -87,6 +61,32 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	this->d_file_mod_datetime_raw = attrib.st_mtime;
 	this->d_file_size_bytes = fs::file_size(temp);
 
+	// check if file is in fact audio file (as it sometimes cannot be!)
+	// effect: this->isInitalized == false, but rest info (about files) is present
+	if (this->fileref->isNull()) return;
+
+	this->d_dfc->IncCount();
+	
+	// SONG INFO
+	this->artist = this->fileref->tag()->artist();
+	this->title = this->fileref->tag()->title();
+	this->album = this->fileref->tag()->album();
+	this->genre = this->fileref->tag()->genre();
+	this->comment = this->fileref->tag()->comment();
+	this->track = this->fileref->tag()->track();
+	this->year = this->fileref->tag()->year();
+	// rest of aliases defined below
+
+	// TECHNICAL INFO
+	this->d_bitrate = this->fileref->audioProperties()->bitrate();
+	//this->d_codec = 
+	//this->d_cover_mimetype = 
+	//this->d_cover_size = 
+	//this->d_cover_type = 
+	//this->d_covers = 
+	this->d_channels = this->fileref->audioProperties()->channels();
+	this->d_sampleRate = this->fileref->audioProperties()->sampleRate();
+	this->d_length = this->fileref->audioProperties()->length();
 
 	TagLib::FileRef *fr = this->fileref.release();
 	delete fr;
@@ -112,7 +112,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		std::unique_ptr<TagLib::MP4::File> temp(new TagLib::MP4::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_m4a);
 	}
-	else { return; }
+	else { this->isInitiated = false; return; }
 
 
 	if (this->d_ext == L"mp3") { // ID3v1, ID3v2 or APE tags present
@@ -208,8 +208,6 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		TagLib::PropertyMap tags = this->taglib_file_ogg->tag()->properties();
 
 		for (auto it = tags.begin(); it != tags.end(); it++) {
-			//std::wcout << it->first.toWString() << " - \"" << it->second.toString().toWString() << "\"" << std::endl;
-
 			if (it->first.toWString() == L"ALBUMARTIST")
 				this->albumartist = it->second.toString().toWString();
 			else if (it->first.toWString() == L"BPM")
@@ -901,7 +899,7 @@ std::list<MediaLibCleaner::File*>::iterator MediaLibCleaner::FilesAggregator::en
 }
 
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
-	if (this->cfile == (this->CurrentFile()->GetDFC()->GetCounter() - 1)) return nullptr;
+	if (this->cfile == this->d_files.size() - 1) return nullptr;
 
 	this->cfile++;
 
@@ -911,7 +909,7 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
 	return *it;
 }
 
-MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::re_set()
+MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::rewind()
 {
 	this->cfile = 0;
 
