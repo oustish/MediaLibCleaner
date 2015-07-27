@@ -17,6 +17,7 @@
 #include <taglib/vorbisfile.h>
 #include <taglib/oggflacfile.h>
 #include <taglib/mp4file.h>
+#include <taglib/flacfile.h>
 #include <taglib/tbytevector.h>
 #include <taglib/tpropertymap.h>
 #include <taglib/tmap.h>
@@ -39,6 +40,7 @@
 
 // MP4 headers
 #include <taglib/mp4tag.h>
+#include <taglib/mp4item.h>
 #include <taglib/mp4coverart.h>
 
 // APE headers
@@ -278,7 +280,7 @@ namespace MediaLibCleaner
 
 		std::unique_ptr<TagLib::MPEG::File> taglib_file_mp3;
 		std::unique_ptr<TagLib::Ogg::Vorbis::File> taglib_file_ogg;
-		std::unique_ptr<TagLib::Ogg::FLAC::File> taglib_file_flac;
+		std::unique_ptr<TagLib::FLAC::File> taglib_file_flac;
 		std::unique_ptr<TagLib::MP4::File> taglib_file_m4a;
 
 	public:

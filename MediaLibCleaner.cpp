@@ -105,10 +105,10 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		temp.swap(this->taglib_file_ogg);
 	}
 	else if (this->d_ext == L"flac") {
-		std::unique_ptr<TagLib::Ogg::FLAC::File> temp(new TagLib::Ogg::FLAC::File(TagLib::FileName(this->d_path.c_str())));
+		std::unique_ptr<TagLib::FLAC::File> temp(new TagLib::FLAC::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_flac);
 	}
-	else if (this->d_ext == L"m4a") {
+	else if (this->d_ext == L"m4a" || this->d_ext == L"mp4") {
 		std::unique_ptr<TagLib::MP4::File> temp(new TagLib::MP4::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_m4a);
 	}
@@ -116,11 +116,10 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 
 
 	if (this->d_ext == L"mp3") { // ID3v1, ID3v2 or APE tags present
-		TagLib::ID3v1::Tag *id3v1tag = this->taglib_file_mp3->ID3v1Tag();
 		TagLib::ID3v2::Tag *id3v2tag = this->taglib_file_mp3->ID3v2Tag();
 		TagLib::APE::Tag *apetag = this->taglib_file_mp3->APETag();
 
-		if (id3v2tag) {
+		if (this->taglib_file_mp3->hasID3v2Tag()) {
 			TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
 			for (; it != id3v2tag->frameList().end(); it++) {
 				std::wstring name = TagLib::String((*it)->frameID()).toWString();
@@ -170,7 +169,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 				}
 			}
 		}
-		else if (apetag) {
+		else if (this->taglib_file_mp3->hasAPETag()) {
 			TagLib::APE::ItemListMap tags = apetag->itemListMap();
 
 			this->albumartist = tags["ALBUMARTIST"].toString();
@@ -187,8 +186,9 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 			this->unsyncedlyrics = tags["UNSYNCEDLYRICS"].toString();
 			this->www = tags["WWW"].toString();
 		}
-		else if (id3v1tag) {
+		else {
 			// ID3v1 dosen't have any of the extended tags
+			// clear them out to be on the safe side
 			this->albumartist = "";
 			this->bpm = "";
 			this->copyright = "";
@@ -234,6 +234,133 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 				this->unsyncedlyrics = it->second.toString().toWString();
 			else if (it->first.toWString() == L"URL" || it->first.toWString() == L"WWW")
 				this->www = it->second.toString().toWString();
+		}
+	}
+	else if (this->d_ext == L"flac") {
+		TagLib::ID3v2::Tag *id3v2tag = this->taglib_file_flac->ID3v2Tag();
+		TagLib::Ogg::XiphComment *xiphcomment = this->taglib_file_flac->xiphComment();
+
+		if (this->taglib_file_flac->hasXiphComment()) {
+			TagLib::Ogg::FieldListMap tags = xiphcomment->fieldListMap();
+
+			this->albumartist = tags["ALBUMARTIST"].toString();
+			this->bpm = tags["BPM"].toString();
+			this->copyright = tags["COPYRIGHT"].toString();
+			this->language = tags["LANGUAGE"].toString();
+			this->length = tags["LENGTH"].toString();
+			this->mood = tags["MOOD"].toString();
+			this->origalbum = tags["ORIGALBUM"].toString();
+			this->origartist = tags["ORIGARTIST"].toString();
+			this->origfilename = tags["ORIGFILENAME"].toString();
+			this->origyear = tags["ORIGYEAR"].toString();
+			this->publisher = tags["ORGANIZATION"].toString();
+			this->unsyncedlyrics = tags["UNSYNCEDLYRICS"].toString();
+			this->www = tags["WWW"].toString();
+		}
+		else if (this->taglib_file_flac->hasID3v2Tag()) {
+			TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
+			for (; it != id3v2tag->frameList().end(); it++) {
+				std::wstring name = TagLib::String((*it)->frameID()).toWString();
+				std::wstring value = (*it)->toString().toWString();
+
+				if (name == L"TPE2") {
+					this->albumartist = value;
+				}
+				else if (name == L"TBPM") {
+					this->bpm = value;
+				}
+				else if (name == L"TCOP") {
+					this->copyright = value;
+				}
+				else if (name == L"TLAN") {
+					this->language = value;
+				}
+				else if (name == L"TLEN") {
+					this->length = value;
+				}
+				else if (name == L"TMOO") {
+					this->mood = value;
+				}
+				else if (name == L"TXXX" && value.substr(0, 6) == L"[MOOD]") {
+					this->mood = value.substr(12); // format: [MOOD] MOOD %mood%
+				}
+				else if (name == L"TOAL") {
+					this->origalbum = value;
+				}
+				else if (name == L"TOPE") {
+					this->origartist = value;
+				}
+				else if (name == L"TOFN") {
+					this->origfilename = value;
+				}
+				else if (name == L"TDOR") {
+					this->origyear = value;
+				}
+				else if (name == L"TPUB") {
+					this->publisher = value;
+				}
+				else if (name == L"USLT") {
+					this->unsyncedlyrics = value;
+				}
+				else if (name == L"WXXX" && value.substr(0, 2) == L"[]") {
+					this->www = value.substr(3);// format: [] www
+				}
+			}
+		}
+		else {
+			// ID3v1 dosen't have any of the extended tags
+			// clear them out to be on the safe side
+			this->albumartist = "";
+			this->bpm = "";
+			this->copyright = "";
+			this->language = "";
+			this->length = "";
+			this->mood = "";
+			this->origalbum = "";
+			this->origartist = "";
+			this->origfilename = "";
+			this->origyear = "";
+			this->publisher = "";
+			this->unsyncedlyrics = "";
+			this->www = "";
+		}
+	}
+	else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+	{
+		TagLib::MP4::ItemListMap taglist = this->taglib_file_m4a->tag()->itemListMap();
+		for (auto it = taglist.begin(); it != taglist.end(); ++it)
+		{
+			if (it->first.toWString() == L"aART")
+				this->albumartist = it->second.toStringList().toString(", ").toWString();
+			if (it->first.toWString() == L"----:com.apple.iTunes:LENGTH")
+				this->length = it->second.toStringList().toString(", ").toWString();
+			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGARTIST")
+				this->origartist = it->second.toStringList().toString(", ").toWString();
+			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGALBUM")
+				this->origalbum = it->second.toStringList().toString(", ").toWString();
+			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGFILENAME")
+				this->origfilename = it->second.toStringList().toString(", ").toWString();
+			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGYEAR")
+				this->origyear = it->second.toStringList().toString(", ").toWString();
+			if (it->first.toWString() == L"----:com.apple.iTunes:PUBLISHER")
+				this->publisher = it->second.toStringList().toString(", ").toWString();
+			if (it->first.toWString() == L"----:com.apple.iTunes:WWW")
+				this->www = it->second.toStringList().toString(", ").toWString();
+		}
+
+		TagLib::PropertyMap tags = this->taglib_file_m4a->tag()->properties();
+
+		for (auto it = tags.begin(); it != tags.end(); it++) {
+			if (it->first.toWString() == L"BPM")
+				this->bpm = it->second.toString().toWString();
+			else if (it->first.toWString() == L"COPYRIGHT")
+				this->copyright = it->second.toString().toWString();
+			else if (it->first.toWString() == L"LANGUAGE")
+				this->language = it->second.toString().toWString();
+			else if (it->first.toWString() == L"MOOD")
+				this->mood = it->second.toString().toWString();
+			else if (it->first.toWString() == L"LYRICS")
+				this->unsyncedlyrics = it->second.toString().toWString();
 		}
 	}
 
