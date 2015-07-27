@@ -330,6 +330,9 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		TagLib::MP4::ItemListMap taglist = this->taglib_file_m4a->tag()->itemListMap();
 		for (auto it = taglist.begin(); it != taglist.end(); ++it)
 		{
+			// debug
+			std::wstring temp = it->second.toStringList().toString(", ").toWString();
+
 			if (it->first.toWString() == L"aART")
 				this->albumartist = it->second.toStringList().toString(", ").toWString();
 			if (it->first.toWString() == L"----:com.apple.iTunes:LENGTH")
@@ -351,6 +354,9 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		TagLib::PropertyMap tags = this->taglib_file_m4a->tag()->properties();
 
 		for (auto it = tags.begin(); it != tags.end(); it++) {
+			//debug
+			std::wstring temp = it->second.toString().toWString();
+
 			if (it->first.toWString() == L"BPM")
 				this->bpm = it->second.toString().toWString();
 			else if (it->first.toWString() == L"COPYRIGHT")
@@ -1067,4 +1073,89 @@ std::string MediaLibCleaner::DFC::GetPath() {
 
 void MediaLibCleaner::DFC::IncCount() {
 	this->count++;
+}
+
+
+
+
+
+MediaLibCleaner::LogAlert::LogAlert(std::wstring filename)
+{
+	if (filename != L"-")
+		this->outputfile.open(filename);
+}
+
+MediaLibCleaner::LogAlert::~LogAlert()
+{
+	this->Close();
+}
+
+void MediaLibCleaner::LogAlert::Close()
+{
+	if (this->outputfile.is_open())
+	{
+		this->outputfile.flush();
+		this->outputfile.close();
+	}
+}
+
+void MediaLibCleaner::LogAlert::Flush()
+{
+	if (this->outputfile.is_open())
+		this->outputfile.flush();
+}
+
+bool MediaLibCleaner::LogAlert::IsOpen()
+{
+	return this->outputfile.is_open();
+}
+
+void MediaLibCleaner::LogAlert::Log(std::wstring module, std::wstring message)
+{
+	this->outputfile << L"[" << module << L"] " << message << std::endl;
+}
+
+
+
+
+
+
+
+MediaLibCleaner::LogProgram::LogProgram(std::wstring filename, int init_debug_level)
+{
+	if (filename != L"-") {
+		this->outputfile.open(filename);
+		this->init_debug_level = init_debug_level;
+	}
+}
+
+MediaLibCleaner::LogProgram::~LogProgram()
+{
+	this->Close();
+}
+
+void MediaLibCleaner::LogProgram::Close()
+{
+	if (this->outputfile.is_open())
+	{
+		this->outputfile.flush();
+		this->outputfile.close();
+	}
+}
+
+void MediaLibCleaner::LogProgram::Flush()
+{
+	if (this->outputfile.is_open())
+		this->outputfile.flush();
+}
+
+bool MediaLibCleaner::LogProgram::IsOpen()
+{
+	return this->outputfile.is_open();
+}
+
+void MediaLibCleaner::LogProgram::Log(std::wstring module, std::wstring message, int debug_level)
+{
+	if (this->init_debug_level <= debug_level)
+		this->outputfile << L"[" << module << L"] " << message << std::endl;
 }

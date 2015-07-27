@@ -363,7 +363,38 @@ namespace MediaLibCleaner
 	};
 
 
+	class LogAlert
+	{
+	public:
+		LogAlert(std::wstring filename);
+		~LogAlert();
 
+		void Log(std::wstring module, std::wstring message);
+		void Close();
+		void Flush();
+
+		bool IsOpen();
+
+	private:
+		std::wofstream outputfile;
+	};
+
+	class LogProgram
+	{
+	public:
+		LogProgram(std::wstring filename, int init_debug_level);
+		~LogProgram();
+
+		void Log(std::wstring module, std::wstring message, int debug_level);
+		void Close();
+		void Flush();
+
+		bool IsOpen();
+
+	private:
+		std::wofstream outputfile;
+		int init_debug_level;
+	};
 
 
 	class FilesAggregator {
