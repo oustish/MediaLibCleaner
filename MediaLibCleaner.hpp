@@ -57,6 +57,8 @@
 #include <memory>
 
 #include "helpers.hpp"
+#include <mutex>
+#include <codecvt>
 
 /**
 * @namespace MediaLibCleaner
@@ -66,14 +68,67 @@
 
 namespace MediaLibCleaner
 {
+	/**
+	 * @class LogAlert MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::LogAlert enables app to print human readable messages regarding user-defined rules.
+	 */
+	class LogAlert
+	{
+	public:
+		LogAlert(std::wstring filename);
+		~LogAlert();
+
+		void Log(std::wstring module, std::wstring message);
+		void Close();
+		void Flush();
+
+		bool IsOpen();
+
+	private:
+		std::wofstream outputfile;
+		std::mutex synch;
+	};
+
+	/**
+	 * @class LogProgram MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::LogProgram enables app to print human readable messages regarding program execution and debuging.
+	 */
+	class LogProgram
+	{
+	public:
+		LogProgram(std::wstring filename, int init_debug_level);
+		~LogProgram();
+
+		void Log(std::wstring module, std::wstring message, int debug_level);
+		void Close();
+		void Flush();
+
+		bool IsOpen();
+
+	private:
+		std::wofstream outputfile;
+		int init_debug_level;
+		std::mutex synch;
+	};
+
+	/**
+	 * @class DFC MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::DFC (Directory Files Counter) is a class shared amongst all MediaLibCleaner::File objects
+	 * It allows all those objects to know how much audio files are there in each directory
+	 */
 	class DFC {
 
 	protected:
 		std::string path;
 		int count;
+		std::unique_ptr<LogAlert>* logalert;
+		std::unique_ptr<LogProgram>* logprogram;
 
 	public:
-		DFC(std::string);
+		DFC(std::string, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 		~DFC();
 
 		int GetCounter();
@@ -283,9 +338,12 @@ namespace MediaLibCleaner
 		std::unique_ptr<TagLib::FLAC::File> taglib_file_flac;
 		std::unique_ptr<TagLib::MP4::File> taglib_file_m4a;
 
+		std::unique_ptr<LogAlert>* logalert;
+		std::unique_ptr<LogProgram>* logprogram;
+
 	public:
 
-		File(std::wstring, MediaLibCleaner::DFC*);
+		File(std::wstring, MediaLibCleaner::DFC*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 		~File();
 
 
@@ -362,55 +420,27 @@ namespace MediaLibCleaner
 		DFC* GetDFC();
 	};
 
-
-	class LogAlert
-	{
-	public:
-		LogAlert(std::wstring filename);
-		~LogAlert();
-
-		void Log(std::wstring module, std::wstring message);
-		void Close();
-		void Flush();
-
-		bool IsOpen();
-
-	private:
-		std::wofstream outputfile;
-	};
-
-	class LogProgram
-	{
-	public:
-		LogProgram(std::wstring filename, int init_debug_level);
-		~LogProgram();
-
-		void Log(std::wstring module, std::wstring message, int debug_level);
-		void Close();
-		void Flush();
-
-		bool IsOpen();
-
-	private:
-		std::wofstream outputfile;
-		int init_debug_level;
-	};
-
-
+	/**
+	 * @class FilesAggregator MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::FilesAggregator aggregates all files that are subject to be processed acording to user-defined rules
+	 */
 	class FilesAggregator {
 
 	protected:
 		std::list<File*> d_files;
 		int cfile = 0;
+		std::unique_ptr<LogAlert>* logalert;
+		std::unique_ptr<LogProgram>* logprogram;
 
 
 	public:
-		FilesAggregator();
+		FilesAggregator(std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 		~FilesAggregator();
 
 		void AddFile(File*);
 		File* GetFile(std::wstring);
-		File* CurrentFile();
+		File* CurrentFile(); // pamiêtaj aby dodaæ info ¿e po pobraniu elementu "oznacza" nastêpny z listy
 
 		std::list<File*>::iterator begin();
 		std::list<File*>::iterator end();

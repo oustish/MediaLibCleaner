@@ -46,7 +46,7 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 
 	for (int i = 1; i <= n; i += 2) {
 		// debug
-		std::wcout << L"Setting tag: '" << s2ws(lua_tostring(L, i)) << L"' to value: '" << s2ws(lua_tostring(L, i + 1)) << L"'" << std::endl;
+		//std::wcout << L"Setting tag: '" << s2ws(lua_tostring(L, i)) << L"' to value: '" << s2ws(lua_tostring(L, i + 1)) << L"'" << std::endl;
 	}
 
 	// return - indicates function completed it's run
@@ -73,7 +73,7 @@ int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 		audiofile->HasTag(s2ws(lua_tostring(L, i)));
 
 		// debug
-		std::wcout << L"Tag is required: '" << s2ws(lua_tostring(L, i)) << "'" << std::endl;
+		//std::wcout << L"Tag is required: '" << s2ws(lua_tostring(L, i)) << "'" << std::endl;
 	}
 
 	// indicates function completed it's run
@@ -100,7 +100,7 @@ int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile) {
 		audiofile->HasTag(s2ws(lua_tostring(L, i)), s2ws(lua_tostring(L, i + 1)));
 
 		// debug
-		std::wcout << L"Tag is required: '" << s2ws(lua_tostring(L, i)) << L"' with value '" << s2ws(lua_tostring(L, i + 1)) << L"'" << std::endl;
+		//std::wcout << L"Tag is required: '" << s2ws(lua_tostring(L, i)) << L"' with value '" << s2ws(lua_tostring(L, i + 1)) << L"'" << std::endl;
 	}
 
 	// indicates function completed it's run
@@ -180,10 +180,10 @@ int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile)
  * @param[in] L			lua_State object to config file
  * @param[in] status	Integer containing lua processor status code
  */
-void lua_ErrorReporting(lua_State *L, int status)
+void lua_ErrorReporting(lua_State *L, int status, std::unique_ptr<MediaLibCleaner::LogProgram>* programlog)
 {
 	if (status != 0) { // if error occured
-		std::cerr << "[LUAPROC][SYSTEM] " << lua_tostring(L, -1) << std::endl;
+		(*programlog)->Log(L"LUA", s2ws(lua_tostring(L, -1)), 1);
 		lua_pop(L, 1); // remove error message
 	}
 }

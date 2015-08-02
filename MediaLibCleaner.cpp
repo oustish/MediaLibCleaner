@@ -4,8 +4,6 @@
  * @version 0.1
  *
  * This file contains definitions of all methods for MediaLibCleaner namespace
- *
- * @todo check in each MediaLibCleaner::File::? method if file was initialized and return values only if it was
  */
 
 #include "MediaLibCleaner.hpp"
@@ -19,13 +17,18 @@
  * @param[in] path  Path to audio file this instance will represent
  * @param[in] dfc	An instance of MediaLibCleaner::DFC
  */
-MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
+MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert)
 {
 	this->d_path = path;
 	this->d_dfc = dfc;
+	this->logalert = logalert;
+	this->logprogram = logprogram;
+
+	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Beginning: " + path, 3);
 
 	// check if file exists
 	if (!boost::filesystem::exists(path)) {
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"File does not exists!", 1);
 		return;
 	}
 
@@ -40,15 +43,22 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	fs::path pDirParentDir = fileParentDir.parent_path();
 
 	// PATH INFO
-	this->d_directory = fileParentDir.filename().wstring();
-	this->d_ext = temp.extension().wstring();					this->d_ext = this->d_ext.substr(1);
-	this->d_filename = temp.filename().wstring();				this->d_filename = this->d_filename.substr(0, this->d_filename.length() - this->d_ext.length() - 1);
-	this->d_folderpath = fileParentDir.wstring();
-	this->d_parent_dir = pDirParentDir.filename().wstring();
-	// _path is setted before - required
+	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading path informations", 3);
+	try {
+		this->d_directory = fileParentDir.filename().wstring();
+		this->d_ext = temp.extension().wstring();					if (this->d_ext.length() > 1) { this->d_ext = this->d_ext.substr(1); }
+		this->d_filename = temp.filename().wstring();				this->d_filename = this->d_filename.substr(0, this->d_filename.length() - this->d_ext.length() - 1);
+		this->d_folderpath = fileParentDir.wstring();
+		this->d_parent_dir = pDirParentDir.filename().wstring();
+		// _path is setted before - required
 #ifdef WIN32
-	this->d_volume = temp.root_name().wstring();
+		this->d_volume = temp.root_name().wstring();
 #endif
+	}
+	catch (...)
+	{
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"File path info reading failed", 2);
+	}
 
 	// STAT INIT FOR DATE INFORMATION
 	// WARNING: MAY ONLY WORK IN WINDOWS!!!
@@ -57,9 +67,16 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	stat(ws2s(this->d_path).c_str(), &attrib);
 
 	// FILE PROPERTIES
-	this->d_file_create_datetime_raw = attrib.st_ctime;
-	this->d_file_mod_datetime_raw = attrib.st_mtime;
-	this->d_file_size_bytes = fs::file_size(temp);
+	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading file properties", 3);
+	try {
+		this->d_file_create_datetime_raw = attrib.st_ctime;
+		this->d_file_mod_datetime_raw = attrib.st_mtime;
+		this->d_file_size_bytes = fs::file_size(temp);
+	}
+	catch (const boost::filesystem::filesystem_error& e)
+	{
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"File properities reading failed: " + s2ws(e.code().message()), 2);
+	}
 
 	// check if file is in fact audio file (as it sometimes cannot be!)
 	// effect: this->isInitalized == false, but rest info (about files) is present
@@ -68,6 +85,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	this->d_dfc->IncCount();
 	
 	// SONG INFO
+	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading basic song tags", 3);
 	this->artist = this->fileref->tag()->artist();
 	this->title = this->fileref->tag()->title();
 	this->album = this->fileref->tag()->album();
@@ -78,6 +96,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	// rest of aliases defined below
 
 	// TECHNICAL INFO
+	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading technical file info", 3);
 	this->d_bitrate = this->fileref->audioProperties()->bitrate();
 	//this->d_codec = 
 	//this->d_cover_mimetype = 
@@ -95,7 +114,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	// SINCE _EXT IS AVALIABLE
 
 	//check for file type
-	
+	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Checking file type and creating appropirate objects", 3);
 	if (this->d_ext == L"mp3") {
 		std::unique_ptr<TagLib::MPEG::File> temp(new TagLib::MPEG::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_mp3);
@@ -116,10 +135,12 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 
 
 	if (this->d_ext == L"mp3") { // ID3v1, ID3v2 or APE tags present
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Is MP3 file", 3);
 		TagLib::ID3v2::Tag *id3v2tag = this->taglib_file_mp3->ID3v2Tag();
 		TagLib::APE::Tag *apetag = this->taglib_file_mp3->APETag();
 
 		if (this->taglib_file_mp3->hasID3v2Tag()) {
+			(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading ID3v2 tags", 3);
 			TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
 			for (; it != id3v2tag->frameList().end(); it++) {
 				std::wstring name = TagLib::String((*it)->frameID()).toWString();
@@ -170,6 +191,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 			}
 		}
 		else if (this->taglib_file_mp3->hasAPETag()) {
+			(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading APE tags", 3);
 			TagLib::APE::ItemListMap tags = apetag->itemListMap();
 
 			this->albumartist = tags["ALBUMARTIST"].toString();
@@ -189,6 +211,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		else {
 			// ID3v1 dosen't have any of the extended tags
 			// clear them out to be on the safe side
+			(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Has ID3v1 tags", 3);
 			this->albumartist = "";
 			this->bpm = "";
 			this->copyright = "";
@@ -205,6 +228,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		}
 	}
 	else if (this->d_ext == L"ogg") {
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Is OGG file", 3);
 		TagLib::PropertyMap tags = this->taglib_file_ogg->tag()->properties();
 
 		for (auto it = tags.begin(); it != tags.end(); it++) {
@@ -237,10 +261,12 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		}
 	}
 	else if (this->d_ext == L"flac") {
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Is FLAC file", 3);
 		TagLib::ID3v2::Tag *id3v2tag = this->taglib_file_flac->ID3v2Tag();
 		TagLib::Ogg::XiphComment *xiphcomment = this->taglib_file_flac->xiphComment();
 
 		if (this->taglib_file_flac->hasXiphComment()) {
+			(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading Xips comments", 3);
 			TagLib::Ogg::FieldListMap tags = xiphcomment->fieldListMap();
 
 			this->albumartist = tags["ALBUMARTIST"].toString();
@@ -258,6 +284,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 			this->www = tags["WWW"].toString();
 		}
 		else if (this->taglib_file_flac->hasID3v2Tag()) {
+			(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Reading ID3v2 tags", 3);
 			TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
 			for (; it != id3v2tag->frameList().end(); it++) {
 				std::wstring name = TagLib::String((*it)->frameID()).toWString();
@@ -310,6 +337,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		else {
 			// ID3v1 dosen't have any of the extended tags
 			// clear them out to be on the safe side
+			(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Has ID3v1 tags", 3);
 			this->albumartist = "";
 			this->bpm = "";
 			this->copyright = "";
@@ -327,7 +355,9 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	}
 	else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
 	{
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Is MP$/M4A file", 3);
 		TagLib::MP4::ItemListMap taglist = this->taglib_file_m4a->tag()->itemListMap();
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"First part of tags is being read", 3);
 		for (auto it = taglist.begin(); it != taglist.end(); ++it)
 		{
 			// debug
@@ -352,7 +382,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 		}
 
 		TagLib::PropertyMap tags = this->taglib_file_m4a->tag()->properties();
-
+		(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Second part of tags is being read", 3);
 		for (auto it = tags.begin(); it != tags.end(); it++) {
 			//debug
 			std::wstring temp = it->second.toString().toWString();
@@ -375,8 +405,11 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc)
 	this->isInitiated = true;
 }
 
+/**
+ * Deconstructor for MediaLibCleaner::File class.
+ */
 MediaLibCleaner::File::~File() {
-
+	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Calling destructor: " + this->d_path, 3);
 }
 
 
@@ -928,7 +961,7 @@ std::wstring MediaLibCleaner::File::GetFileSizeMB() {
 bool MediaLibCleaner::File::HasTag(std::wstring tag, std::wstring val)
 {
 	// debug
-	std::wcout << L"Checking for tag: '" + tag + L"' with possible value: '" + val + L"'" << std::endl;
+	(*this->logalert)->Log(L"File::HasTag(" + this->d_path + L")", L"Cheking for tag: '" + tag + L"' with possible value: '" + val + L"'");
 	return true;
 }
 
@@ -942,7 +975,7 @@ bool MediaLibCleaner::File::HasTag(std::wstring tag, std::wstring val)
 bool MediaLibCleaner::File::Rename(std::wstring nname)
 {
 	// debug
-	std::wcout << L"Renaming file to: '" << nname << L"'" << std::endl;
+	(*this->logalert)->Log(L"File::Rename(" + this->d_path + L")", L"Reanming file to: '" + nname + L"'");
 	return true;
 }
 
@@ -956,7 +989,7 @@ bool MediaLibCleaner::File::Rename(std::wstring nname)
 bool MediaLibCleaner::File::Move(std::wstring nloc)
 {
 	// debug
-	std::wcout << L"Moving file to: '" << nloc << L"'" << std::endl;
+	(*this->logalert)->Log(L"File::Move(" + this->d_path + L")", L"Moving file to: '" + nloc + L"'");
 	return true;
 }
 
@@ -968,7 +1001,7 @@ bool MediaLibCleaner::File::Move(std::wstring nloc)
 bool MediaLibCleaner::File::Delete()
 {
 	// debug
-	std::wcout << L"Deleting file" << std::endl;
+	(*this->logalert)->Log(L"File::Delete(" + this->d_path + L")", L"Deleting file");
 	return true;
 }
 
@@ -982,6 +1015,11 @@ bool MediaLibCleaner::File::IsInitiated() {
 	return this->isInitiated;
 }
 
+/**
+ * Method returning MediaLibCleaner::DFC object of the current file
+ *
+ * @return DFC for given file.
+ */
 MediaLibCleaner::DFC* MediaLibCleaner::File::GetDFC() {
 	return this->d_dfc;
 }
@@ -993,9 +1031,22 @@ MediaLibCleaner::DFC* MediaLibCleaner::File::GetDFC() {
 
 
 
+/**
+ * MediaLibCleaner::FilesAggreagator constructor.
+ *
+ * @
+ */
+MediaLibCleaner::FilesAggregator::FilesAggregator(std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert)
+{
+	this->logprogram = logprogram;
+	this->logalert = logalert;
 
-MediaLibCleaner::FilesAggregator::FilesAggregator() {}
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator", L"Creating object", 3);
+}
+
 MediaLibCleaner::FilesAggregator::~FilesAggregator() {
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator", L"Calling destructor", 3);
+
 	std::list<MediaLibCleaner::File*>::iterator nd = this->end();
 	for (std::list<MediaLibCleaner::File*>::iterator it = this->begin(); it != nd; it++) {
 		delete *it;
@@ -1003,16 +1054,20 @@ MediaLibCleaner::FilesAggregator::~FilesAggregator() {
 }
 
 void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *_file) {
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::AddFile", L"Adding file", 3);
 	this->d_files.push_back(_file);
 }
 
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring filepath) {
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::GetFile", L"Searching for File object...", 3);
 	std::list<MediaLibCleaner::File*>::iterator nd = this->end();
 	for (std::list<MediaLibCleaner::File*>::iterator it = this->begin(); it != nd; it++) {
 		if ((*it)->GetPath() == filepath) {
+			(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::GetFile", L"...successful", 3);
 			return *it;
 		}
 	}
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::GetFile", L"...unsuccessful", 3);
 	return nullptr;
 }
 
@@ -1039,6 +1094,8 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
 	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
 	std::advance(it, this->cfile);
 
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::next", L"Selected next element, returning it", 3);
+
 	return *it;
 }
 
@@ -1049,6 +1106,8 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::rewind()
 	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
 	std::advance(it, this->cfile);
 
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::rewind", L"Rewind completed, returning first element", 3);
+
 	return *it;
 }
 
@@ -1056,12 +1115,19 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::rewind()
 
 
 
-MediaLibCleaner::DFC::DFC(std::string path) {
+MediaLibCleaner::DFC::DFC(std::string path, std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert) {
 	this->path = path;
 	this->count = 0;
+	this->logalert = logalert;
+	this->logprogram = logprogram;
+
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Created object for: " + s2ws(path), 3);
 }
 
-MediaLibCleaner::DFC::~DFC() {}
+MediaLibCleaner::DFC::~DFC()
+{
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Destructor called: " + s2ws(path), 3);
+}
 
 int MediaLibCleaner::DFC::GetCounter() {
 	return this->count;
@@ -1081,12 +1147,18 @@ void MediaLibCleaner::DFC::IncCount() {
 
 MediaLibCleaner::LogAlert::LogAlert(std::wstring filename)
 {
-	if (filename != L"-")
+	if (filename != L"-") {
 		this->outputfile.open(filename);
+		std::locale loc(std::locale::classic(), new std::codecvt_utf8<wchar_t>);
+		this->outputfile.imbue(loc);
+	}
 }
 
 MediaLibCleaner::LogAlert::~LogAlert()
 {
+	this->synch.lock();
+	this->synch.unlock();
+
 	this->Close();
 }
 
@@ -1112,7 +1184,9 @@ bool MediaLibCleaner::LogAlert::IsOpen()
 
 void MediaLibCleaner::LogAlert::Log(std::wstring module, std::wstring message)
 {
+	this->synch.lock();
 	this->outputfile << L"[" << module << L"] " << message << std::endl;
+	this->synch.unlock();
 }
 
 
@@ -1125,12 +1199,18 @@ MediaLibCleaner::LogProgram::LogProgram(std::wstring filename, int init_debug_le
 {
 	if (filename != L"-") {
 		this->outputfile.open(filename);
+		std::locale loc(std::locale::classic(), new std::codecvt_utf8<wchar_t>);
+		this->outputfile.imbue(loc);
+
 		this->init_debug_level = init_debug_level;
 	}
 }
 
 MediaLibCleaner::LogProgram::~LogProgram()
 {
+	this->synch.lock();
+	this->synch.unlock();
+
 	this->Close();
 }
 
@@ -1156,6 +1236,23 @@ bool MediaLibCleaner::LogProgram::IsOpen()
 
 void MediaLibCleaner::LogProgram::Log(std::wstring module, std::wstring message, int debug_level)
 {
-	if (this->init_debug_level <= debug_level)
-		this->outputfile << L"[" << module << L"] " << message << std::endl;
+	if (this->init_debug_level >= debug_level) {
+		this->synch.lock();
+
+		switch (debug_level)
+		{
+		case 1:
+			this->outputfile << L"ERROR:     ";
+			break;
+		case 2:
+			this->outputfile << L"WARNING:   ";
+			break;
+		case 3:
+			this->outputfile << L"DEBUG:     ";
+		}
+
+		this->outputfile << L"[" << module << L"] ";
+		this->outputfile << message << std::endl;
+		this->synch.unlock();
+	}
 }

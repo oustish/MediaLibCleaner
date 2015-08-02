@@ -120,16 +120,9 @@ static int lua_caller_delete(lua_State *L)
 
 
 
-// cerr and cout streams, if required by the user
-/**
- * Global variable to store new std::wcerr::rdbuf to allow user to define his own error stream (as a file)
- */
-std::ofstream wcerr;
+std::unique_ptr<MediaLibCleaner::LogAlert> alertlog;
 
-/**
- * Global variable to store new std::wcout::rdbuf to allow user to define his own output stream (as a file)
- */
-std::ofstream wcout;
+std::unique_ptr<MediaLibCleaner::LogProgram> programlog;
 
 // some variables required for aliases
 int total_files = 0;
@@ -150,6 +143,10 @@ time_t datetime_raw = 0;
  * @return Exit code for entire program
  */
 int main(int argc, char *argv[]) {
+	//debug
+	static std::basic_stringbuf<std::ostream::char_type> buf;
+	std::cerr.rdbuf(&buf);
+
 	// capture time app was launched
 	datetime_raw = time(nullptr);
 
@@ -167,7 +164,9 @@ int main(int argc, char *argv[]) {
 	// converting from wstring to string
 	// IMPORTANT: uses Windows.h functions
 	// need to come up with solution for Linux-based OS later
-	std::string config = ws2s(wconfig);
+	std::wstring wcfgc = wconfig;
+	replaceAll(wcfgc, L"\\", L"\\\\");
+	std::string config = ws2s(wcfgc);
 
 	// init lua processor
 	lua_State *L = luaL_newstate();
@@ -216,51 +215,58 @@ int main(int argc, char *argv[]) {
 	error_level = static_cast<int>(lua_tonumber(L, -4));
 
 	if (error_log != "-") {
-		// set cerr to proper value
-		wcerr.open(error_log);
-		std::cerr.rdbuf(wcerr.rdbuf());
+		std::unique_ptr<MediaLibCleaner::LogProgram> temp(new MediaLibCleaner::LogProgram(s2ws(error_log), error_level));
+		programlog.swap(temp);
 	}
 
 	if (alert_log != "-") {
-		// set cout to proper value
-		wcout.open(alert_log);
-		std::cout.rdbuf(wcout.rdbuf());
+		std::unique_ptr<MediaLibCleaner::LogAlert> temp(new MediaLibCleaner::LogAlert(s2ws(alert_log)));
+		alertlog.swap(temp);
 	}
 
 	lua_close(L);
 
 	// BELOW ARE PROCEDURES TO SCAN GIVEN DIRECTORY AND RETRIEVE ALL INFO WE REQUIRE
 	// create MediaLibCleaner::FilesAggregator object nad swap it with global variable one
-	std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAgg(new MediaLibCleaner::FilesAggregator());
+	programlog->Log(L"Main", L"Creating MediaLibCleaner::FilesAggregator object", 3);
+	std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAgg(new MediaLibCleaner::FilesAggregator(&programlog, &alertlog));
 	filesAgg.swap(filesAggregator);
 
 	// shorten namespace
 	namespace fs = boost::filesystem;
 	fs::path workingdir(path);
 
+	programlog->Log(L"Main", L"Checking for working directory existence.", 3);
 	if (!fs::exists(workingdir) || !fs::is_directory(workingdir)) {
+		programlog->Log(L"Main", L"Working dir does not exist. Check your _path variable in LUA script.", 1);
 		return 3; // ret. val; debug
 	}
 
+	programlog->Log(L"Main", L"Beginning scan for files inside working dir.", 3);
 	fs::path dirpath = workingdir;
-	MediaLibCleaner::DFC *currdfc = new MediaLibCleaner::DFC(path);
+	MediaLibCleaner::DFC *currdfc = new MediaLibCleaner::DFC(path, &programlog, &alertlog);
 	for (fs::recursive_directory_iterator dir(path), dir_end; dir != dir_end; ++dir)
 	{
 		fs::path filepath = dir->path();
 
+		programlog->Log(L"Main", L"Current file: " + filepath.generic_wstring(), 3);
+
 		if (filepath == L"." || filepath == L"..") continue;
 
-		if (!(filepath.has_filename() && filepath.has_extension())) {
+		if (fs::is_directory(filepath)) {
+			programlog->Log(L"Main", L"Current file is a directory.", 3);
+
 			// not a file, but a directory!
 			dirpath = filepath;
 
-			currdfc = new MediaLibCleaner::DFC(dirpath.string());
+			currdfc = new MediaLibCleaner::DFC(dirpath.string(), &programlog, &alertlog);
 
 			continue;
 		}
 
 		// create File object for file
-		MediaLibCleaner::File *filez = new MediaLibCleaner::File(filepath.wstring(), currdfc);
+		programlog->Log(L"Main", L"Creating MediaLibCleaner::File object for file.", 3);
+		MediaLibCleaner::File *filez = new MediaLibCleaner::File(filepath.wstring(), currdfc, &programlog, &alertlog);
 		filesAggregator->AddFile(filez);
 
 		// increment total_files counter if audio file
@@ -273,18 +279,20 @@ int main(int argc, char *argv[]) {
 
 
 	// ITERATE OVER COLLECTION AND PROCESS FILES
+	programlog->Log(L"Main", L"Starting iteration through collection.", 3);
 	MediaLibCleaner::File* cfile = filesAggregator->rewind();
 	do {
-		std::wcout << std::endl << std::endl << std::endl << std::endl;
-		std::wcout << L"File: " << cfile->GetPath() << std::endl << std::endl;
-
+		programlog->Log(L"Main", L"File: " + cfile->GetPath(), 3);
+		programlog->Log(L"Main", L"Creating config file", 3);
 		std::wstring new_config = ReplaceAllAliasOccurences(wconfig, cfile);
 
 		//std::wcout << new_config << std::endl << std::endl;
 
+		programlog->Log(L"Main", L"Lua procesor init", 3);
 		L = luaL_newstate();
 		luaL_openlibs(L);
 
+		programlog->Log(L"Main", L"Registering functions", 3);
 		// register C functions in lua processor
 		lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
 		lua_register(L, "_SetTags", lua_caller_settags);
@@ -294,12 +302,15 @@ int main(int argc, char *argv[]) {
 		lua_register(L, "_Move", lua_caller_move);
 		lua_register(L, "_Delete", lua_caller_delete);
 
+		programlog->Log(L"Main", L"Converting wide string to string", 3);
 		std::string nc = ws2s(new_config);
 
+		programlog->Log(L"Main", L"Lua procesor loads string", 3);
 		s = luaL_loadstring(L, nc.c_str());
 		lua_pushstring(L, "");
 		lua_setglobal(L, "_action");
 
+		programlog->Log(L"Main", L"Executing script", 3);
 		// exetute script
 		if (s == 0) {
 			s = lua_pcall(L, 0, LUA_MULTRET, 0);
@@ -307,6 +318,7 @@ int main(int argc, char *argv[]) {
 		if (s != 0) { // because error code may change after execution
 			// report any errors, if found
 			lua_error_reporting(L, s);
+			std::wcout << new_config << std::endl << std::endl;
 		}
 
 		lua_close(L);
@@ -314,22 +326,13 @@ int main(int argc, char *argv[]) {
 		cfile = filesAggregator->next();
 	} while (cfile != nullptr);
 	
+	time_t dt_end = time(nullptr);
+	time_t diff = dt_end - datetime_raw;
 
+	programlog->Log(L"Main", L"Program execution time: " + std::to_wstring(diff) + L" sec", 3);
+	programlog->Log(L"Main", L"Total files: " + std::to_wstring(total_files), 3);
 
-	// wait for user
-	std::wcout << L"Program ended. Standing by for user input...";
-	system("pause >NUL");
-
-	// flush and close cout and cerr, if opened previously
-	if (wcerr.is_open()) {
-		wcerr.flush();
-		wcerr.close();
-	}
-
-	if (wcout.is_open()) {
-		wcout.flush();
-		wcout.close();
-	}
+	programlog->Log(L"Main", L"Program finished", 3);
 
 	return 0;
 }
@@ -353,7 +356,7 @@ int main(int argc, char *argv[]) {
  * @param[in] status  Integer with status code returned after calling lua_pcall() or similar function
  */
 void lua_error_reporting(lua_State *L, int status) {
-	lua_ErrorReporting(L, status);
+	lua_ErrorReporting(L, status, &programlog);
 }
 
 
@@ -381,7 +384,6 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 
 	// copy original path to not confuse rest of the program
 	std::wstring lpath = audiofile->GetPath();
-	replaceAll(lpath, L"\\", L"\\\\");
 
 	// do the magic!
 	// SONG DATA
@@ -455,6 +457,8 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 	replaceAll(newc, L"%_datetime_raw%", std::to_wstring(time(nullptr)));
 	replaceAll(newc, L"%_total_files%", std::to_wstring(total_files));
 	replaceAll(newc, L"%_total_files_dir%", std::to_wstring(audiofile->GetDFC()->GetCounter()));
+
+	replaceAll(newc, L"\\", L"\\\\");
 
 	return newc;
 }
