@@ -5,7 +5,9 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/locale.hpp>
 
-#include <Windows.h>
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
 void replaceAll(std::string&, const std::string&, const std::string&);
 void replaceAll(std::wstring&, const std::wstring&, const std::wstring&);

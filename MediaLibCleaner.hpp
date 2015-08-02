@@ -17,6 +17,7 @@
 #include <taglib/vorbisfile.h>
 #include <taglib/oggflacfile.h>
 #include <taglib/mp4file.h>
+#include <taglib/flacfile.h>
 #include <taglib/tbytevector.h>
 #include <taglib/tpropertymap.h>
 #include <taglib/tmap.h>
@@ -39,6 +40,7 @@
 
 // MP4 headers
 #include <taglib/mp4tag.h>
+#include <taglib/mp4item.h>
 #include <taglib/mp4coverart.h>
 
 // APE headers
@@ -55,6 +57,8 @@
 #include <memory>
 
 #include "helpers.hpp"
+#include <mutex>
+#include <codecvt>
 
 /**
 * @namespace MediaLibCleaner
@@ -64,14 +68,67 @@
 
 namespace MediaLibCleaner
 {
+	/**
+	 * @class LogAlert MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::LogAlert enables app to print human readable messages regarding user-defined rules.
+	 */
+	class LogAlert
+	{
+	public:
+		LogAlert(std::wstring filename);
+		~LogAlert();
+
+		void Log(std::wstring module, std::wstring message);
+		void Close();
+		void Flush();
+
+		bool IsOpen();
+
+	private:
+		std::wofstream outputfile;
+		std::mutex synch;
+	};
+
+	/**
+	 * @class LogProgram MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::LogProgram enables app to print human readable messages regarding program execution and debuging.
+	 */
+	class LogProgram
+	{
+	public:
+		LogProgram(std::wstring filename, int init_debug_level);
+		~LogProgram();
+
+		void Log(std::wstring module, std::wstring message, int debug_level);
+		void Close();
+		void Flush();
+
+		bool IsOpen();
+
+	private:
+		std::wofstream outputfile;
+		int init_debug_level;
+		std::mutex synch;
+	};
+
+	/**
+	 * @class DFC MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::DFC (Directory Files Counter) is a class shared amongst all MediaLibCleaner::File objects
+	 * It allows all those objects to know how much audio files are there in each directory
+	 */
 	class DFC {
 
 	protected:
 		std::string path;
 		int count;
+		std::unique_ptr<LogAlert>* logalert;
+		std::unique_ptr<LogProgram>* logprogram;
 
 	public:
-		DFC(std::string);
+		DFC(std::string, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 		~DFC();
 
 		int GetCounter();
@@ -177,39 +234,39 @@ namespace MediaLibCleaner
 		/**
 		* An int containing information about audio file bitrate
 		*/
-		int _bitrate;
+		int d_bitrate;
 		/**
 		* An int containing information about audio file codec
 		*/
-		std::wstring _codec;
+		std::wstring d_codec;
 		/**
 		* An int containing information about audio file first cover mimetype
 		*/
-		std::wstring _cover_mimetype;
+		std::wstring d_cover_mimetype;
 		/**
 		* An int containing information about audio file first cover size (in bytes)
 		*/
-		size_t _cover_size;
+		size_t d_cover_size;
 		/**
 		* An int containing information about audio file first cover type
 		*/
-		std::wstring _cover_type;
+		std::wstring d_cover_type;
 		/**
 		* An int containing information about audio file covers count
 		*/
-		int _covers;
+		int d_covers;
 		/**
 		* An int containing information about amount of channels in audio file
 		*/
-		int _channels;
+		int d_channels;
 		/**
 		* An int containing information about auido file sample rate
 		*/
-		int _sampleRate;
+		int d_sampleRate;
 		/**
 		* An int containing information about audio file length in seconds
 		*/
-		int _length;
+		int d_length;
 
 
 
@@ -218,33 +275,33 @@ namespace MediaLibCleaner
 		/**
 		* An std::string containing full name of directory file resides in
 		*/
-		std::wstring _directory = L"";
+		std::wstring d_directory = L"";
 		/**
 		* An std::string containing file extension
 		*/
-		std::wstring _ext = L"";
+		std::wstring d_ext = L"";
 		/**
 		* An std::string containing file name (without extension)
 		*/
-		std::wstring _filename = L"";
+		std::wstring d_filename = L"";
 		/**
 		* An std::string containing full path of directory file resides in
 		*/
-		std::wstring _folderpath = L"";
+		std::wstring d_folderpath = L"";
 		/**
 		* An std::string containing name of parent directory
 		*/
-		std::wstring _parent_dir = L"";
+		std::wstring d_parent_dir = L"";
 		/**
 		* An std::string containing full path to audio file
 		*/
-		std::wstring _path = L"";
+		std::wstring d_path = L"";
 
 #ifdef WIN32
 		/**
 		* An std::string containing volume letter (Windows only)
 		*/
-		std::wstring _volume = L"";
+		std::wstring d_volume = L"";
 #endif
 
 
@@ -254,15 +311,15 @@ namespace MediaLibCleaner
 		/**
 		* An std::string containing file created date in unix timestamp format
 		*/
-		time_t _file_create_datetime_raw = 0;
+		time_t d_file_create_datetime_raw = 0;
 		/**
 		* An std::string containing file modified date in unix timestamp format
 		*/
-		time_t _file_mod_datetime_raw = 0;
+		time_t d_file_mod_datetime_raw = 0;
 		/**
 		* A size_t containing file size (in bytes)
 		*/
-		size_t _file_size_bytes = 0;
+		size_t d_file_size_bytes = 0;
 
 
 
@@ -272,18 +329,21 @@ namespace MediaLibCleaner
 		*/
 		bool isInitiated = false;
 
-		DFC* _dfc = NULL;
+		DFC* d_dfc = nullptr;
 
 		std::unique_ptr<TagLib::FileRef> fileref;
 
 		std::unique_ptr<TagLib::MPEG::File> taglib_file_mp3;
 		std::unique_ptr<TagLib::Ogg::Vorbis::File> taglib_file_ogg;
-		std::unique_ptr<TagLib::Ogg::FLAC::File> taglib_file_flac;
+		std::unique_ptr<TagLib::FLAC::File> taglib_file_flac;
 		std::unique_ptr<TagLib::MP4::File> taglib_file_m4a;
+
+		std::unique_ptr<LogAlert>* logalert;
+		std::unique_ptr<LogProgram>* logprogram;
 
 	public:
 
-		File(std::wstring, MediaLibCleaner::DFC*);
+		File(std::wstring, MediaLibCleaner::DFC*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 		~File();
 
 
@@ -350,54 +410,42 @@ namespace MediaLibCleaner
 		std::wstring GetFileSizeKB();
 		std::wstring GetFileSizeMB();
 
-
+		// methods for lua processor manipulations
+		bool HasTag(std::wstring tag, std::wstring val = L"::null::");
+		bool Rename(std::wstring);
+		bool Move(std::wstring);
+		bool Delete();
 
 		bool IsInitiated();
 		DFC* GetDFC();
 	};
 
-
-
-
-
+	/**
+	 * @class FilesAggregator MediaLibCleaner.hpp
+	 *
+	 * Class MediaLibCleaner::FilesAggregator aggregates all files that are subject to be processed acording to user-defined rules
+	 */
 	class FilesAggregator {
 
 	protected:
-		std::list<File*> _files;
+		std::list<File*> d_files;
 		int cfile = 0;
+		std::unique_ptr<LogAlert>* logalert;
+		std::unique_ptr<LogProgram>* logprogram;
 
 
 	public:
-		FilesAggregator();
+		FilesAggregator(std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 		~FilesAggregator();
 
 		void AddFile(File*);
 		File* GetFile(std::wstring);
-		File* CurrentFile();
+		File* CurrentFile(); // pamiêtaj aby dodaæ info ¿e po pobraniu elementu "oznacza" nastêpny z listy
 
 		std::list<File*>::iterator begin();
 		std::list<File*>::iterator end();
 
 		File* next();
+		File* rewind();
 	};
-
-
-
-
-
-	/*class DFCAggregator {
-	
-	protected:
-		std::list<DFC*> _directories;
-
-	public:
-		DFCAggregator();
-		~DFCAggregator();
-
-		void AddDirectory(DFC*);
-		DFC* GetDirectory(std::string);
-
-		std::list<DFC*>::iterator begin();
-		std::list<DFC*>::iterator end();
-	};*/
 }

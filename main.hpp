@@ -21,4 +21,4 @@
 
 
 void lua_error_reporting(lua_State*, int);
-static std::string _ReplaceAllAliasOccurences(std::string&, std::unique_ptr<MediaLibCleaner::File>&);
+std::wstring ReplaceAllAliasOccurences(std::wstring&, MediaLibCleaner::File*);
