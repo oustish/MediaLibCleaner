@@ -1054,20 +1054,28 @@ MediaLibCleaner::FilesAggregator::~FilesAggregator() {
 }
 
 void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *_file) {
+	this->add_synch.lock();
+
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::AddFile", L"Adding file", 3);
 	this->d_files.push_back(_file);
+
+	this->add_synch.unlock();
 }
 
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring filepath) {
+	this->get_synch.lock();
+
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::GetFile", L"Searching for File object...", 3);
-	std::list<MediaLibCleaner::File*>::iterator nd = this->end();
-	for (std::list<MediaLibCleaner::File*>::iterator it = this->begin(); it != nd; it++) {
+	auto nd = this->end();
+	for (auto it = this->begin(); it != nd; it++) {
 		if ((*it)->GetPath() == filepath) {
 			(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::GetFile", L"...successful", 3);
+			this->get_synch.unlock();
 			return *it;
 		}
 	}
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::GetFile", L"...unsuccessful", 3);
+	this->get_synch.unlock();
 	return nullptr;
 }
 
@@ -1089,55 +1097,63 @@ std::list<MediaLibCleaner::File*>::iterator MediaLibCleaner::FilesAggregator::en
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
 	if (this->cfile == this->d_files.size() - 1) return nullptr;
 
+	this->next_synch.lock();
+
 	this->cfile++;
 
-	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
+	auto it = this->begin();
 	std::advance(it, this->cfile);
 
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::next", L"Selected next element, returning it", 3);
 
+	this->next_synch.unlock();
+
 	return *it;
 }
 
-MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::rewind()
+void MediaLibCleaner::FilesAggregator::rewind()
 {
-	this->cfile = 0;
+	this->get_synch.lock();
+	this->next_synch.lock();
+	this->rewind_synch.lock();
 
-	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
-	std::advance(it, this->cfile);
+	this->cfile = -1;
 
-	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::rewind", L"Rewind completed, returning first element", 3);
+	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::rewind", L"Rewind completed", 3);
 
-	return *it;
+	this->rewind_synch.unlock();
+	this->next_synch.unlock();
+	this->get_synch.unlock();
 }
 
 
 
 
 
-MediaLibCleaner::DFC::DFC(std::string path, std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert) {
+MediaLibCleaner::DFC::DFC(std::wstring path, std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert) {
 	this->path = path;
 	this->count = 0;
 	this->logalert = logalert;
 	this->logprogram = logprogram;
 
-	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Created object for: " + s2ws(path), 3);
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Created object for: " + path, 3);
 }
 
 MediaLibCleaner::DFC::~DFC()
 {
-	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Destructor called: " + s2ws(path), 3);
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Destructor called: " + this->path, 3);
 }
 
 int MediaLibCleaner::DFC::GetCounter() {
 	return this->count;
 }
 
-std::string MediaLibCleaner::DFC::GetPath() {
+std::wstring MediaLibCleaner::DFC::GetPath() {
 	return this->path;
 }
 
 void MediaLibCleaner::DFC::IncCount() {
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC::IncCount", L"Incrementing DFC count", 3);
 	this->count++;
 }
 
@@ -1255,4 +1271,24 @@ void MediaLibCleaner::LogProgram::Log(std::wstring module, std::wstring message,
 		this->outputfile << message << std::endl;
 		this->synch.unlock();
 	}
+}
+
+MediaLibCleaner::DFC* MediaLibCleaner::AddDFC(std::list<MediaLibCleaner::DFC*>* dfc_list, boost::filesystem::path pth, std::mutex* synch, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
+{
+	synch->lock();
+
+	auto end = dfc_list->end();
+	for (auto it = dfc_list->begin(); it != end; ++it)
+	{
+		if ((*it)->GetPath() == pth) {
+			synch->unlock();
+			return (*it);
+		}
+	}
+	
+	DFC* newdfc = new DFC(pth.generic_wstring(), lp, la);
+	dfc_list->push_back(newdfc);
+
+	synch->unlock();
+	return newdfc;
 }

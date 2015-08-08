@@ -19,6 +19,7 @@
 #include <Windows.h>
 
 
-
 void lua_error_reporting(lua_State*, int);
 std::wstring ReplaceAllAliasOccurences(std::wstring&, MediaLibCleaner::File*);
+void process(std::wstring, std::unique_ptr<MediaLibCleaner::FilesAggregator>*, std::unique_ptr<MediaLibCleaner::LogProgram>*);
+void scan(std::list<MediaLibCleaner::DFC*>* dfcl, std::list<boost::filesystem::path>* pathl, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la, std::string pth, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, int* tf);

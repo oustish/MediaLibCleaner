@@ -122,17 +122,17 @@ namespace MediaLibCleaner
 	class DFC {
 
 	protected:
-		std::string path;
+		std::wstring path;
 		int count;
 		std::unique_ptr<LogAlert>* logalert;
 		std::unique_ptr<LogProgram>* logprogram;
 
 	public:
-		DFC(std::string, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+		DFC(std::wstring, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 		~DFC();
 
 		int GetCounter();
-		std::string GetPath();
+		std::wstring GetPath();
 
 		void IncCount();
 	};
@@ -432,6 +432,10 @@ namespace MediaLibCleaner
 		int cfile = 0;
 		std::unique_ptr<LogAlert>* logalert;
 		std::unique_ptr<LogProgram>* logprogram;
+		std::mutex add_synch;
+		std::mutex get_synch;
+		std::mutex next_synch;
+		std::mutex rewind_synch;
 
 
 	public:
@@ -446,6 +450,8 @@ namespace MediaLibCleaner
 		std::list<File*>::iterator end();
 
 		File* next();
-		File* rewind();
+		void rewind();
 	};
+
+	MediaLibCleaner::DFC* AddDFC(std::list<MediaLibCleaner::DFC*>* dfc_list, boost::filesystem::path pth, std::mutex* synch, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la);
 }
