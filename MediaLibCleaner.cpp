@@ -1053,11 +1053,11 @@ MediaLibCleaner::FilesAggregator::~FilesAggregator() {
 	}
 }
 
-void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *_file) {
+void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *file) {
 	this->add_synch.lock();
 
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator::AddFile", L"Adding file", 3);
-	this->d_files.push_back(_file);
+	this->d_files.push_back(file);
 
 	this->add_synch.unlock();
 }
@@ -1125,6 +1125,89 @@ void MediaLibCleaner::FilesAggregator::rewind()
 	this->next_synch.unlock();
 	this->get_synch.unlock();
 }
+
+
+
+
+
+/**
+* MediaLibCleaner::PathsAggreagator constructor.
+*
+* @
+*/
+MediaLibCleaner::PathsAggregator::PathsAggregator(std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert)
+{
+	this->logprogram = logprogram;
+	this->logalert = logalert;
+
+	(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator", L"Creating object", 3);
+}
+
+MediaLibCleaner::PathsAggregator::~PathsAggregator() {
+	(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator", L"Calling destructor", 3);
+}
+
+void MediaLibCleaner::PathsAggregator::AddPath(boost::filesystem::path path) {
+	this->add_synch.lock();
+
+	(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator::AddPath", L"Adding file", 3);
+	this->d_files.push_back(path);
+
+	this->add_synch.unlock();
+}
+
+boost::filesystem::path MediaLibCleaner::PathsAggregator::CurrentPath() {
+	std::list<boost::filesystem::path>::iterator it = this->begin();
+	std::advance(it, this->cfile);
+
+	return *it;
+}
+
+std::list<boost::filesystem::path>::iterator MediaLibCleaner::PathsAggregator::begin() {
+	return this->d_files.begin();
+}
+
+std::list<boost::filesystem::path>::iterator MediaLibCleaner::PathsAggregator::end() {
+	return this->d_files.end();
+}
+
+boost::filesystem::path MediaLibCleaner::PathsAggregator::next() {
+	if (this->cfile == this->d_files.size() - 1)
+	{
+		(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator::next", L"Last element reached, returning empty string", 3);
+		return "";
+	}
+
+	this->next_synch.lock();
+
+	this->cfile++;
+
+	auto it = this->begin();
+	std::advance(it, this->cfile);
+
+	(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator::next", L"Selected next element, returning it", 3);
+
+	this->next_synch.unlock();
+
+	return *it;
+}
+
+void MediaLibCleaner::PathsAggregator::rewind()
+{
+	this->get_synch.lock();
+	this->next_synch.lock();
+	this->rewind_synch.lock();
+
+	this->cfile = -1;
+
+	(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator::rewind", L"Rewind completed", 3);
+
+	this->rewind_synch.unlock();
+	this->next_synch.unlock();
+	this->get_synch.unlock();
+}
+
+
 
 
 

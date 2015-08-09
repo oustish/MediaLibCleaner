@@ -32,6 +32,8 @@ int error_level = 0;
  */
 std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAggregator;
 
+MediaLibCleaner::File** current_file_thd;
+
 /**
  * Function calling lua_IsAuidoFile() function. This function is registered withing lua processor!
  *
@@ -40,7 +42,11 @@ std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAggregator;
  * @return Number of output arguments on stack for lua processor
  */
 static int lua_caller_isaudiofile(lua_State *L) {
-	return lua_IsAudioFile(L, filesAggregator->CurrentFile());
+	lua_getglobal(L, "__thread");
+	int thd = lua_tonumber(L, -1);
+	auto cfile = current_file_thd[thd];
+
+	return lua_IsAudioFile(L, cfile);
 }
 
 /**
@@ -51,7 +57,11 @@ static int lua_caller_isaudiofile(lua_State *L) {
  * @return Number of output arguments on stack for lua processor
  */
 static int lua_caller_settags(lua_State *L) {
-	return lua_SetTags(L, filesAggregator->CurrentFile());
+	lua_getglobal(L, "__thread");
+	int thd = lua_tonumber(L, -1);
+	auto cfile = current_file_thd[thd];
+
+	return lua_SetTags(L, cfile);
 }
 
 /**
@@ -63,7 +73,11 @@ static int lua_caller_settags(lua_State *L) {
 */
 static int lua_caller_setrequiredtags(lua_State *L)
 {
-	return lua_SetRequiredTags(L, filesAggregator->CurrentFile());
+	lua_getglobal(L, "__thread");
+	int thd = lua_tonumber(L, -1);
+	auto cfile = current_file_thd[thd];
+
+	return lua_SetRequiredTags(L, cfile);
 }
 
 /**
@@ -75,7 +89,11 @@ static int lua_caller_setrequiredtags(lua_State *L)
 */
 static int lua_caller_checktagsvalues(lua_State *L)
 {
-	return lua_CheckTagsValues(L, filesAggregator->CurrentFile());
+	lua_getglobal(L, "__thread");
+	int thd = lua_tonumber(L, -1);
+	auto cfile = current_file_thd[thd];
+
+	return lua_CheckTagsValues(L, cfile);
 }
 
 /**
@@ -87,7 +105,11 @@ static int lua_caller_checktagsvalues(lua_State *L)
 */
 static int lua_caller_rename(lua_State *L)
 {
-	return lua_Rename(L, filesAggregator->CurrentFile());
+	lua_getglobal(L, "__thread");
+	int thd = lua_tonumber(L, -1);
+	auto cfile = current_file_thd[thd];
+
+	return lua_Rename(L, cfile);
 }
 
 /**
@@ -99,7 +121,11 @@ static int lua_caller_rename(lua_State *L)
 */
 static int lua_caller_move(lua_State *L)
 {
-	return lua_Move(L, filesAggregator->CurrentFile());
+	lua_getglobal(L, "__thread");
+	int thd = lua_tonumber(L, -1);
+	auto cfile = current_file_thd[thd];
+
+	return lua_Move(L, cfile);
 }
 
 /**
@@ -111,7 +137,11 @@ static int lua_caller_move(lua_State *L)
 */
 static int lua_caller_delete(lua_State *L)
 {
-	return lua_Delete(L, filesAggregator->CurrentFile());
+	lua_getglobal(L, "__thread");
+	int thd = lua_tonumber(L, -1);
+	auto cfile = current_file_thd[thd];
+
+	return lua_Delete(L, cfile);
 }
 
 
@@ -246,7 +276,7 @@ int main(int argc, char *argv[]) {
 	std::list<MediaLibCleaner::DFC*> dfc_list;
 
 	// object that will hold all paths
-	std::list<boost::filesystem::path> path_list;
+	MediaLibCleaner::PathsAggregator* path_list = new MediaLibCleaner::PathsAggregator(&programlog, &alertlog);
 
 	std::wcout << L"Scanning for files..." << std::endl;
 
@@ -259,25 +289,30 @@ int main(int argc, char *argv[]) {
 
 		programlog->Log(L"Main", L"Adding path to list: " + filepath.generic_wstring(), 3);
 
-		path_list.push_back(filepath);
+		path_list->AddPath(filepath);
 	}
 
 	// parsing paths and files
 	// full multi-core support (in theory)
 	programlog->Log(L"Main", L"Beginning parsing paths and files", 3);
 	std::wcout << L"Scanning files..." << std::endl;
-	scan(&dfc_list, &path_list, &programlog, &alertlog, path, &filesAggregator, &total_files);
+	scan(&dfc_list, path_list, &programlog, &alertlog, path, &filesAggregator, &total_files);
 
 
 	// ITERATE OVER COLLECTION AND PROCESS FILES
 	// multi-core
+	int thdmax = omp_get_max_threads();
+	current_file_thd = new MediaLibCleaner::File*[thdmax];
+
 	programlog->Log(L"Main", L"Starting iteration through collection.", 3);
 	std::wcout << L"Processing files..." << std::endl;
-	filesAggregator->rewind();
 	process(wconfig, &filesAggregator, &programlog);
 
 	for (auto it = dfc_list.begin(); it != dfc_list.end(); ++it)
 		delete (*it);
+
+	delete[] current_file_thd;
+	delete path_list;
 
 	time_t dt_end = time(nullptr);
 	time_t diff = dt_end - datetime_raw;
@@ -418,87 +453,129 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 
 void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, std::unique_ptr<MediaLibCleaner::LogProgram>* lp)
 {
-	auto cfile = (*fA)->next();
-	
-	if (cfile == nullptr) return;
+	std::wstring new_config, wid;
+	lua_State *L;
+	std::string nc;
+	int s = 0, id = 0;
+	MediaLibCleaner::File* cfile;
 
-	do {
-		(*lp)->Log(L"Main", L"File: " + cfile->GetPath(), 3);
-		(*lp)->Log(L"Main", L"Creating config file", 3);
-		std::wstring new_config = ReplaceAllAliasOccurences(wconfig, cfile);
+	(*fA)->rewind();
 
-		(*lp)->Log(L"Main", L"Lua procesor init", 3);
-		lua_State *L = luaL_newstate();
-		luaL_openlibs(L);
+	#pragma omp parallel shared(lp, fA, wconfig) private(new_config, L, nc, s, cfile, id, wid)
+	{
+		id = omp_get_thread_num();
+		wid = std::to_wstring(id);
 
-		(*lp)->Log(L"Main", L"Registering functions", 3);
-		// register C functions in lua processor
-		lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
-		lua_register(L, "_SetTags", lua_caller_settags);
-		lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
-		lua_register(L, "_CheckTagsValues", lua_caller_checktagsvalues);
-		lua_register(L, "_Rename", lua_caller_rename);
-		lua_register(L, "_Move", lua_caller_move);
-		lua_register(L, "_Delete", lua_caller_delete);
-
-		(*lp)->Log(L"Main", L"Converting wide string to string", 3);
-		std::string nc = ws2s(new_config);
-
-		(*lp)->Log(L"Main", L"Lua procesor loads string", 3);
-		int s = luaL_loadstring(L, nc.c_str());
-		lua_pushstring(L, "");
-		lua_setglobal(L, "_action");
-
-		(*lp)->Log(L"Main", L"Executing script", 3);
-		// exetute script
-		if (s == 0) {
-			s = lua_pcall(L, 0, LUA_MULTRET, 0);
-		}
-		if (s != 0) { // because error code may change after execution
-			// report any errors, if found
-			lua_error_reporting(L, s);
-			std::wcout << new_config << std::endl << std::endl;
-		}
-
-		lua_close(L);
+		(*lp)->Log(L"Main (" + wid + L")", L"Thread starting", 3);
 
 		cfile = (*fA)->next();
-	} while (cfile != nullptr);
+		do {
+			(*lp)->Log(L"Main (" + wid + L")", L"File: " + cfile->GetPath(), 3);
+			(*lp)->Log(L"Main (" + wid + L")", L"Creating config file", 3);
+			new_config = ReplaceAllAliasOccurences(wconfig, cfile);
+
+			(*lp)->Log(L"Main (" + wid + L")", L"Lua procesor init", 3);
+			lua_State *L = luaL_newstate();
+			luaL_openlibs(L);
+
+			(*lp)->Log(L"Main (" + wid + L")", L"Registering functions", 3);
+			// register C functions in lua processor
+			lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
+			lua_register(L, "_SetTags", lua_caller_settags);
+			lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
+			lua_register(L, "_CheckTagsValues", lua_caller_checktagsvalues);
+			lua_register(L, "_Rename", lua_caller_rename);
+			lua_register(L, "_Move", lua_caller_move);
+			lua_register(L, "_Delete", lua_caller_delete);
+
+			(*lp)->Log(L"Main (" + wid + L")", L"Converting wide string to string", 3);
+			nc = ws2s(new_config);
+
+			(*lp)->Log(L"Main (" + wid + L")", L"Lua procesor loads string", 3);
+			s = luaL_loadstring(L, nc.c_str());
+
+			lua_pushstring(L, "");
+			lua_setglobal(L, "_action");
+
+			lua_pushinteger(L, id);
+			lua_setglobal(L, "__thread");
+
+			current_file_thd[id] = cfile;
+
+			(*lp)->Log(L"Main (" + wid + L")", L"Executing script", 3);
+			// exetute script
+			if (s == 0) {
+				s = lua_pcall(L, 0, LUA_MULTRET, 0);
+			}
+			if (s != 0) { // because error code may change after execution
+				// report any errors, if found
+				(*lp)->Log(L"Main (" + wid + L")", L"Error occured", 3);
+				lua_error_reporting(L, s);
+				std::wcout << new_config << std::endl << std::endl;
+			}
+
+			lua_close(L);
+
+			cfile = (*fA)->next();
+		} while (cfile != nullptr);
+
+		(*lp)->Log(L"Main (" + wid + L")", L"Thread exiting", 3);
+	}
 }
 
-void scan(std::list<MediaLibCleaner::DFC*>* dfcl, std::list<boost::filesystem::path>* pathl, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la, std::string pth, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, int* tf)
+void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregator* pathl, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la, std::string pth, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, int* tf)
 {
 	std::mutex dfcl_mutex;
-	auto *currdfc = MediaLibCleaner::AddDFC(dfcl, pth, &dfcl_mutex, lp, la);
-	boost::filesystem::path dirpath;
+	MediaLibCleaner::DFC *currdfc = MediaLibCleaner::AddDFC(dfcl, pth, &dfcl_mutex, lp, la);
+	boost::filesystem::path dirpath, currpath;
+	int id = 0;
+	std::wstring wid;
 
-	for (auto it = pathl->begin(); it != pathl->end(); ++it)
+	pathl->rewind();
+
+	#pragma omp parallel shared(dfcl_mutex, pathl, lp, la, pth, fA, tf, dfcl) private(currdfc, currpath, dirpath, id, wid)
 	{
-		(*lp)->Log(L"Main", L"Current file: " + (*it).generic_wstring(), 3);
+		id = omp_get_thread_num();
+		wid = std::to_wstring(id);
 
-		if (boost::filesystem::is_directory(*it)) {
-			(*lp)->Log(L"Main", L"Current file is a directory.", 3);
+		currdfc = MediaLibCleaner::AddDFC(dfcl, pth, &dfcl_mutex, lp, la);
 
-			// not a file, but a directory!
-			dirpath = *it;
+		(*lp)->Log(L"Main (" + wid + L")", L"Thread starting", 3);
 
-			currdfc = MediaLibCleaner::AddDFC(dfcl, dirpath, &dfcl_mutex, lp, la);
+		currpath = pathl->next();
 
-			continue;
-		}
+		do
+		{
+			(*lp)->Log(L"Main (" + wid + L")", L"Current file: " + currpath.generic_wstring(), 3);
 
-		// create File object for file
-		(*lp)->Log(L"Main", L"Creating MediaLibCleaner::File object for file.", 3);
-		MediaLibCleaner::File *filez = new MediaLibCleaner::File((*it).wstring(), currdfc, lp, la);
-		(*fA)->AddFile(filez);
+			if (boost::filesystem::is_directory(currpath)) {
+				(*lp)->Log(L"Main (" + wid + L")", L"Current file is a directory.", 3);
 
-		// increment total_files counter if audio file
-		if (filez->IsInitiated()) {
-			#pragma omp atomic
-			(*tf)++;
-		}
+				// not a file, but a directory!
+				dirpath = currpath;
 
-		// DFC counter is incremented inside MediaLibCleaner::File object
-		// where additional checks are performed
+				currdfc = MediaLibCleaner::AddDFC(dfcl, dirpath, &dfcl_mutex, lp, la);
+
+				currpath = pathl->next();
+				continue;
+			}
+
+			// create File object for file
+			(*lp)->Log(L"Main (" + wid + L")", L"Creating MediaLibCleaner::File object for file.", 3);
+			MediaLibCleaner::File *filez = new MediaLibCleaner::File(currpath.generic_wstring(), currdfc, lp, la);
+			(*fA)->AddFile(filez);
+
+			// increment total_files counter if audio file
+			if (filez->IsInitiated()) {
+				#pragma omp critical
+				{
+					(*tf)++;
+				}
+			}
+
+			currpath = pathl->next();
+		} while (currpath != "");
+
+		(*lp)->Log(L"Main (" + wid + L")", L"Thread exiting", 3);
 	}
 }

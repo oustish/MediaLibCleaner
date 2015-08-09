@@ -126,6 +126,7 @@ namespace MediaLibCleaner
 		int count;
 		std::unique_ptr<LogAlert>* logalert;
 		std::unique_ptr<LogProgram>* logprogram;
+		int tid;
 
 	public:
 		DFC(std::wstring, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
@@ -444,12 +445,40 @@ namespace MediaLibCleaner
 
 		void AddFile(File*);
 		File* GetFile(std::wstring);
-		File* CurrentFile(); // pamiêtaj aby dodaæ info ¿e po pobraniu elementu "oznacza" nastêpny z listy
+		File* CurrentFile();
 
 		std::list<File*>::iterator begin();
 		std::list<File*>::iterator end();
 
 		File* next();
+		void rewind();
+	};
+
+
+	class PathsAggregator {
+
+	protected:
+		std::list<boost::filesystem::path> d_files;
+		int cfile = 0;
+		std::unique_ptr<LogAlert>* logalert;
+		std::unique_ptr<LogProgram>* logprogram;
+		std::mutex add_synch;
+		std::mutex get_synch;
+		std::mutex next_synch;
+		std::mutex rewind_synch;
+
+
+	public:
+		PathsAggregator(std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+		~PathsAggregator();
+
+		void AddPath(boost::filesystem::path);
+		boost::filesystem::path CurrentPath();
+
+		std::list<boost::filesystem::path>::iterator begin();
+		std::list<boost::filesystem::path>::iterator end();
+
+		boost::filesystem::path next();
 		void rewind();
 	};
 

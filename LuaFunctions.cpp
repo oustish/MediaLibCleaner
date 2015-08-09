@@ -17,7 +17,7 @@
  */
 int lua_IsAudioFile(lua_State *L, MediaLibCleaner::File* audiofile) {
 	int n = lua_gettop(L);
-	if (n > 0)
+	if (n > 1)
 	{
 		lua_pushboolean(L, false);
 		std::wcerr << "[LUAPROC] _IsAudioFile(): function expects 0 arguments (" << std::to_wstring(n) << " given)." << std::endl;
@@ -36,7 +36,7 @@ int lua_IsAudioFile(lua_State *L, MediaLibCleaner::File* audiofile) {
  * @param[in,out]   audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
  */
 int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile) {
-	int n = lua_gettop(L); // argc for function
+	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n % 2 == 1 && n > 0) { // requiers even, positive amount of arguments
 		lua_pushboolean(L, false);
@@ -45,8 +45,7 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 	}
 
 	for (int i = 1; i <= n; i += 2) {
-		// debug
-		//std::wcout << L"Setting tag: '" << s2ws(lua_tostring(L, i)) << L"' to value: '" << s2ws(lua_tostring(L, i + 1)) << L"'" << std::endl;
+		
 	}
 
 	// return - indicates function completed it's run
@@ -61,7 +60,7 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 * @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
 */
 int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile) {
-	int n = lua_gettop(L); // argc for function
+	int n = lua_gettop(L) - 1; // argc for function
 	// input parameters are simple tag names, like this: "artist"
 	// note lack of % signs at the beginning and end
 
@@ -71,9 +70,6 @@ int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 		if (tag == "") continue;
 
 		audiofile->HasTag(s2ws(lua_tostring(L, i)));
-
-		// debug
-		//std::wcout << L"Tag is required: '" << s2ws(lua_tostring(L, i)) << "'" << std::endl;
 	}
 
 	// indicates function completed it's run
@@ -88,7 +84,7 @@ int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 * @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
 */
 int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile) {
-	int n = lua_gettop(L); // argc for function
+	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n % 2 == 1 && n > 0) { // requiers even, positive amount of arguments
 		lua_pushboolean(L, false);
@@ -98,9 +94,6 @@ int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile) {
 
 	for (int i = 1; i <= n; i += 2) {
 		audiofile->HasTag(s2ws(lua_tostring(L, i)), s2ws(lua_tostring(L, i + 1)));
-
-		// debug
-		//std::wcout << L"Tag is required: '" << s2ws(lua_tostring(L, i)) << L"' with value '" << s2ws(lua_tostring(L, i + 1)) << L"'" << std::endl;
 	}
 
 	// indicates function completed it's run
@@ -116,7 +109,7 @@ int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile) {
 */
 int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile)
 {
-	int n = lua_gettop(L); // argc for function
+	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n != 1) // requires exactly 1 argument
 	{
@@ -138,7 +131,7 @@ int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile)
 */
 int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile)
 {
-	int n = lua_gettop(L); // argc for function
+	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n != 1) // requires exactly 1 argument
 	{
@@ -160,7 +153,7 @@ int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile)
 */
 int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile)
 {
-	int n = lua_gettop(L); // argc for function
+	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n > 0) //does not expect arguments
 	{
