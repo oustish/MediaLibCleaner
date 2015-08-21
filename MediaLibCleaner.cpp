@@ -639,6 +639,451 @@ std::wstring MediaLibCleaner::File::GetWWW() {
 
 
 
+
+
+
+
+
+
+
+
+/**
+* Method allowing to set \%artist% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetArtist(std::wstring value)
+{
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->artist = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			this->taglib_file_mp3->tag()->setArtist(value);
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			this->taglib_file_ogg->tag()->setArtist(value);
+		}
+		else if (this->d_ext == L"flac")
+		{
+			this->taglib_file_flac->tag()->setArtist(value);
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			this->taglib_file_m4a->tag()->setArtist(value);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%title% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetTitle(std::wstring value) {
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->title = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			this->taglib_file_mp3->tag()->setTitle(value);
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			this->taglib_file_ogg->tag()->setTitle(value);
+		}
+		else if (this->d_ext == L"flac")
+		{
+			this->taglib_file_flac->tag()->setTitle(value);
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			this->taglib_file_m4a->tag()->setTitle(value);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%album% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetAlbum(std::wstring value) {
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->album = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			this->taglib_file_mp3->tag()->setAlbum(value);
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			this->taglib_file_ogg->tag()->setAlbum(value);
+		}
+		else if (this->d_ext == L"flac")
+		{
+			this->taglib_file_flac->tag()->setAlbum(value);
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			this->taglib_file_m4a->tag()->setAlbum(value);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%genre% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetGenre(std::wstring value) {
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->genre = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			this->taglib_file_mp3->tag()->setGenre(value);
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			this->taglib_file_ogg->tag()->setGenre(value);
+		}
+		else if (this->d_ext == L"flac")
+		{
+			this->taglib_file_flac->tag()->setGenre(value);
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			this->taglib_file_m4a->tag()->setGenre(value);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%comment% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetComment(std::wstring value) {
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->comment = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			this->taglib_file_mp3->tag()->setComment(value);
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			this->taglib_file_ogg->tag()->setComment(value);
+		}
+		else if (this->d_ext == L"flac")
+		{
+			this->taglib_file_flac->tag()->setComment(value);
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			this->taglib_file_m4a->tag()->setComment(value);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%track% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetTrack(int value) {
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->track = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			this->taglib_file_mp3->tag()->setTrack(value);
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			this->taglib_file_ogg->tag()->setTrack(value);
+		}
+		else if (this->d_ext == L"flac")
+		{
+			this->taglib_file_flac->tag()->setTrack(value);
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			this->taglib_file_m4a->tag()->setTrack(value);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%year% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetYear(int value) {
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->year = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			this->taglib_file_mp3->tag()->setYear(value);
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			this->taglib_file_ogg->tag()->setYear(value);
+		}
+		else if (this->d_ext == L"flac")
+		{
+			this->taglib_file_flac->tag()->setYear(value);
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			this->taglib_file_m4a->tag()->setYear(value);
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%albumartist% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetAlbumArtist(std::wstring value) {
+	if (this->isInitiated)
+	{
+		// change inner value
+		this->comment = value;
+
+		// change value in file
+		if (this->d_ext == L"mp3")
+		{
+			if (this->taglib_file_mp3->hasID3v2Tag())
+			{
+				TagLib::ID3v2::Tag *tag = this->taglib_file_mp3->ID3v2Tag(true);
+				TagLib::ByteVector handle = "TPE2";
+
+				if (value == L"::null::")
+				{
+					tag->removeFrames(handle);
+				}
+				else
+				{
+					if (!tag->frameList(handle).isEmpty())
+					{
+						tag->frameList(handle).front()->setText(value);
+					}
+					else
+					{
+						TagLib::ID3v2::TextIdentificationFrame *frame =
+							new TagLib::ID3v2::TextIdentificationFrame(handle, TagLib::String::UTF8);
+						tag->addFrame(frame);
+						frame->setText(value);
+					}
+				}
+
+				this->taglib_file_mp3->save();
+			}
+
+			if (this->taglib_file_mp3->hasAPETag())
+			{
+				TagLib::APE::Tag *tag = this->taglib_file_mp3->APETag(true);
+				std::wstring handle = L"ALBUMARTIST";
+				
+				if (value == L"::null::")
+				{
+					tag->removeItem(handle);
+				}
+				else
+				{
+					TagLib::APE::Item *item = new TagLib::APE::Item(handle, value);
+					tag->setItem(handle, *item);
+				}
+
+				this->taglib_file_mp3->save();
+			}
+		}
+		else if (this->d_ext == L"ogg")
+		{
+			
+		}
+		else if (this->d_ext == L"flac")
+		{
+			
+		}
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+		{
+			
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+* Method allowing to set \%bpm% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetBPM(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%copyright% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetCopyright(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%language% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetLanguage(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%length% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetTagLength(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%mood% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetMood(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%origalbum% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetOrigAlbum(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%origartist% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetOrigArtist(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%origfilename% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetOrigFilename(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%origyear% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetOrigYear(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%publisher% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetPublisher(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%unsyncedlyrics% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetLyricsUnsynced(std::wstring value) {
+
+	return false;
+}
+
+/**
+* Method allowing to set \%www% tag from an audio file
+*
+* @return Information if setting tag has completed successfully
+*/
+bool MediaLibCleaner::File::SetWWW(std::wstring value) {
+
+	return false;
+}
+
+
+
+
+
+
+
+
+
+
 // TECHNICAL INFO
 
 

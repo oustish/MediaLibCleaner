@@ -31,6 +31,7 @@
 #include <taglib/id3v2frame.h>
 #include <taglib/id3v2tag.h>
 #include <taglib/attachedpictureframe.h>
+#include <taglib/textidentificationframe.h>
 
 // Xiph headers
 #include <taglib/xiphcomment.h>
@@ -45,6 +46,7 @@
 
 // APE headers
 #include <taglib/apetag.h>
+#include <taglib/apeitem.h>
 
 
 #include <boost/filesystem.hpp>
@@ -371,6 +373,27 @@ namespace MediaLibCleaner
 		std::wstring GetLyricsUnsynced();
 		std::wstring GetWWW();
 
+		bool SetArtist(std::wstring value);
+		bool SetTitle(std::wstring value);
+		bool SetAlbum(std::wstring value);
+		bool SetGenre(std::wstring value);
+		bool SetComment(std::wstring value);
+		bool SetTrack(int value);
+		bool SetYear(int value);
+		bool SetAlbumArtist(std::wstring value);
+		bool SetBPM(std::wstring value);
+		bool SetCopyright(std::wstring value);
+		bool SetLanguage(std::wstring value);
+		bool SetTagLength(std::wstring value);
+		bool SetMood(std::wstring value);
+		bool SetOrigAlbum(std::wstring value);
+		bool SetOrigArtist(std::wstring value);
+		bool SetOrigFilename(std::wstring value);
+		bool SetOrigYear(std::wstring value);
+		bool SetPublisher(std::wstring value);
+		bool SetLyricsUnsynced(std::wstring value);
+		bool SetWWW(std::wstring value);
+
 
 		// TECHNICAL INFO
 		int GetBitrate();
@@ -454,7 +477,11 @@ namespace MediaLibCleaner
 		void rewind();
 	};
 
-
+	/**
+	* @class PathsAggregator MediaLibCleaner.hpp
+	*
+	* Class MediaLibCleaner::PathsAggregator aggregates all files paths and prepares them to be feeded into MediaLibCleaner::File class
+	*/
 	class PathsAggregator {
 
 	protected:

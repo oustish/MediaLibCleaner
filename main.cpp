@@ -466,19 +466,19 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 		id = omp_get_thread_num();
 		wid = std::to_wstring(id);
 
-		(*lp)->Log(L"Main (" + wid + L")", L"Thread starting", 3);
+		(*lp)->Log(L"Process (" + wid + L")", L"Thread starting", 3);
 
 		cfile = (*fA)->next();
 		do {
-			(*lp)->Log(L"Main (" + wid + L")", L"File: " + cfile->GetPath(), 3);
-			(*lp)->Log(L"Main (" + wid + L")", L"Creating config file", 3);
+			(*lp)->Log(L"Process (" + wid + L")", L"File: " + cfile->GetPath(), 3);
+			(*lp)->Log(L"Process (" + wid + L")", L"Creating config file", 3);
 			new_config = ReplaceAllAliasOccurences(wconfig, cfile);
 
-			(*lp)->Log(L"Main (" + wid + L")", L"Lua procesor init", 3);
+			(*lp)->Log(L"Process (" + wid + L")", L"Lua procesor init", 3);
 			lua_State *L = luaL_newstate();
 			luaL_openlibs(L);
 
-			(*lp)->Log(L"Main (" + wid + L")", L"Registering functions", 3);
+			(*lp)->Log(L"Process (" + wid + L")", L"Registering functions", 3);
 			// register C functions in lua processor
 			lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
 			lua_register(L, "_SetTags", lua_caller_settags);
@@ -488,10 +488,10 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 			lua_register(L, "_Move", lua_caller_move);
 			lua_register(L, "_Delete", lua_caller_delete);
 
-			(*lp)->Log(L"Main (" + wid + L")", L"Converting wide string to string", 3);
+			(*lp)->Log(L"Process (" + wid + L")", L"Converting wide string to string", 3);
 			nc = ws2s(new_config);
 
-			(*lp)->Log(L"Main (" + wid + L")", L"Lua procesor loads string", 3);
+			(*lp)->Log(L"Process (" + wid + L")", L"Lua procesor loads string", 3);
 			s = luaL_loadstring(L, nc.c_str());
 
 			lua_pushstring(L, "");
@@ -502,14 +502,14 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 
 			current_file_thd[id] = cfile;
 
-			(*lp)->Log(L"Main (" + wid + L")", L"Executing script", 3);
+			(*lp)->Log(L"Process (" + wid + L")", L"Executing script", 3);
 			// exetute script
 			if (s == 0) {
 				s = lua_pcall(L, 0, LUA_MULTRET, 0);
 			}
 			if (s != 0) { // because error code may change after execution
 				// report any errors, if found
-				(*lp)->Log(L"Main (" + wid + L")", L"Error occured", 3);
+				(*lp)->Log(L"Process (" + wid + L")", L"Error occured", 3);
 				lua_error_reporting(L, s);
 				std::wcout << new_config << std::endl << std::endl;
 			}
@@ -519,7 +519,7 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 			cfile = (*fA)->next();
 		} while (cfile != nullptr);
 
-		(*lp)->Log(L"Main (" + wid + L")", L"Thread exiting", 3);
+		(*lp)->Log(L"Process (" + wid + L")", L"Thread exiting", 3);
 	}
 }
 
@@ -540,16 +540,16 @@ void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregat
 
 		currdfc = MediaLibCleaner::AddDFC(dfcl, pth, &dfcl_mutex, lp, la);
 
-		(*lp)->Log(L"Main (" + wid + L")", L"Thread starting", 3);
+		(*lp)->Log(L"Scan (" + wid + L")", L"Thread starting", 3);
 
 		currpath = pathl->next();
 
 		do
 		{
-			(*lp)->Log(L"Main (" + wid + L")", L"Current file: " + currpath.generic_wstring(), 3);
+			(*lp)->Log(L"Scan (" + wid + L")", L"Current file: " + currpath.generic_wstring(), 3);
 
 			if (boost::filesystem::is_directory(currpath)) {
-				(*lp)->Log(L"Main (" + wid + L")", L"Current file is a directory.", 3);
+				(*lp)->Log(L"Scan (" + wid + L")", L"Current file is a directory.", 3);
 
 				// not a file, but a directory!
 				dirpath = currpath;
@@ -561,7 +561,7 @@ void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregat
 			}
 
 			// create File object for file
-			(*lp)->Log(L"Main (" + wid + L")", L"Creating MediaLibCleaner::File object for file.", 3);
+			(*lp)->Log(L"Scan (" + wid + L")", L"Creating MediaLibCleaner::File object for file.", 3);
 			MediaLibCleaner::File *filez = new MediaLibCleaner::File(currpath.generic_wstring(), currdfc, lp, la);
 			(*fA)->AddFile(filez);
 
@@ -576,6 +576,6 @@ void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregat
 			currpath = pathl->next();
 		} while (currpath != "");
 
-		(*lp)->Log(L"Main (" + wid + L")", L"Thread exiting", 3);
+		(*lp)->Log(L"Scan (" + wid + L")", L"Thread exiting", 3);
 	}
 }
