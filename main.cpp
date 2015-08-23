@@ -319,12 +319,15 @@ int main(int argc, char *argv[]) {
 	std::wcout << L"Processing files..." << std::endl;
 	process(wconfig, &filesAggregator, &programlog);
 
+	// deleting DFC objects
 	for (auto it = dfc_list.begin(); it != dfc_list.end(); ++it)
 		delete (*it);
 
+	// deleting other things
 	delete[] current_file_thd;
 	delete path_list;
 
+	// saving time diff for log output
 	time_t dt_end = time(nullptr);
 	time_t diff = dt_end - datetime_raw;
 
@@ -333,6 +336,10 @@ int main(int argc, char *argv[]) {
 
 	programlog->Log(L"Main", L"Program finished", 3);
 
+	// unlocking named mutex
+	global_mutex.unlock();
+
+	// http://www.etfroundup.com/wp-content/uploads/2014/11/thats_all_folks_wallpaper.jpg
 	return 0;
 }
 
