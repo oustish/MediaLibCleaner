@@ -13,6 +13,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/locale.hpp>
 
+#include <boost/interprocess/sync/named_mutex.hpp>
+
 #include "LuaFunctions.hpp"
 #include "helpers.hpp"
 

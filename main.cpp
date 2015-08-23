@@ -170,6 +170,17 @@ time_t datetime_raw = 0;
  * @return Exit code for entire program
  */
 int main(int argc, char *argv[]) {
+	// only one instance of program is allowed
+	// using named mutex
+	boost::interprocess::named_mutex global_mutex(boost::interprocess::open_or_create, "medialibcleaner_mutex_named");
+	bool res = global_mutex.try_lock();
+
+	if (!res)
+	{
+		std::wcout << L"Only one instance of the program is allowed. Exiting...";
+		return 4;
+	}
+
 	//debug
 	static std::basic_stringbuf<std::ostream::char_type> buf;
 	std::cerr.rdbuf(&buf);
