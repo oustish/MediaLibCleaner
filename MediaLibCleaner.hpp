@@ -32,6 +32,8 @@
 #include <taglib/id3v2tag.h>
 #include <taglib/attachedpictureframe.h>
 #include <taglib/textidentificationframe.h>
+#include <taglib/unsynchronizedlyricsframe.h>
+#include <taglib/urllinkframe.h>
 
 // Xiph headers
 #include <taglib/xiphcomment.h>
@@ -344,6 +346,8 @@ namespace MediaLibCleaner
 		std::unique_ptr<LogAlert>* logalert;
 		std::unique_ptr<LogProgram>* logprogram;
 
+		bool setTagUniversal(std::string id3tag, std::string xiphtag, std::string apetag, std::string mp4tag, TagLib::String value = TagLib::String::null);
+
 	public:
 
 		File(std::wstring, MediaLibCleaner::DFC*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
@@ -373,26 +377,26 @@ namespace MediaLibCleaner
 		std::wstring GetLyricsUnsynced();
 		std::wstring GetWWW();
 
-		bool SetArtist(std::wstring value);
-		bool SetTitle(std::wstring value);
-		bool SetAlbum(std::wstring value);
-		bool SetGenre(std::wstring value);
-		bool SetComment(std::wstring value);
-		bool SetTrack(int value);
-		bool SetYear(int value);
-		bool SetAlbumArtist(std::wstring value);
-		bool SetBPM(std::wstring value);
-		bool SetCopyright(std::wstring value);
-		bool SetLanguage(std::wstring value);
-		bool SetTagLength(std::wstring value);
-		bool SetMood(std::wstring value);
-		bool SetOrigAlbum(std::wstring value);
-		bool SetOrigArtist(std::wstring value);
-		bool SetOrigFilename(std::wstring value);
-		bool SetOrigYear(std::wstring value);
-		bool SetPublisher(std::wstring value);
-		bool SetLyricsUnsynced(std::wstring value);
-		bool SetWWW(std::wstring value);
+		bool SetArtist(TagLib::String value);
+		bool SetTitle(TagLib::String value);
+		bool SetAlbum(TagLib::String value);
+		bool SetGenre(TagLib::String value);
+		bool SetComment(TagLib::String value);
+		bool SetTrack(TagLib::uint value);
+		bool SetYear(TagLib::uint value);
+		bool SetAlbumArtist(TagLib::String value);
+		bool SetBPM(TagLib::String value);
+		bool SetCopyright(TagLib::String value);
+		bool SetLanguage(TagLib::String value);
+		bool SetTagLength(TagLib::String value);
+		bool SetMood(TagLib::String value);
+		bool SetOrigAlbum(TagLib::String value);
+		bool SetOrigArtist(TagLib::String value);
+		bool SetOrigFilename(TagLib::String value);
+		bool SetOrigYear(TagLib::String value);
+		bool SetPublisher(TagLib::String value);
+		bool SetLyricsUnsynced(TagLib::String value);
+		bool SetWWW(TagLib::String value);
 
 
 		// TECHNICAL INFO
@@ -435,10 +439,12 @@ namespace MediaLibCleaner
 		std::wstring GetFileSizeMB();
 
 		// methods for lua processor manipulations
-		bool HasTag(std::wstring tag, std::wstring val = L"::null::");
+		bool HasTag(std::wstring tag, TagLib::String val = TagLib::String::null);
 		bool Rename(std::wstring);
 		bool Move(std::wstring);
 		bool Delete();
+		bool SetTag(std::wstring, TagLib::String val = TagLib::String::null);
+		bool SetTag(std::wstring, TagLib::uint val = 0);
 
 		bool IsInitiated();
 		DFC* GetDFC();

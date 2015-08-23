@@ -45,7 +45,10 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 	}
 
 	for (int i = 1; i <= n; i += 2) {
-		
+		std::wstring tag = s2ws(lua_tostring(L, i));
+		std::wstring val = s2ws(lua_tostring(L, i+1));
+
+		audiofile->SetTag(tag, val);
 	}
 
 	// return - indicates function completed it's run
