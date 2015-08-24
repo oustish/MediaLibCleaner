@@ -43,7 +43,7 @@ MediaLibCleaner::File** current_file_thd;
  */
 static int lua_caller_isaudiofile(lua_State *L) {
 	lua_getglobal(L, "__thread");
-	int thd = lua_tonumber(L, -1);
+	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_IsAudioFile(L, cfile);
@@ -58,7 +58,7 @@ static int lua_caller_isaudiofile(lua_State *L) {
  */
 static int lua_caller_settags(lua_State *L) {
 	lua_getglobal(L, "__thread");
-	int thd = lua_tonumber(L, -1);
+	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_SetTags(L, cfile);
@@ -74,7 +74,7 @@ static int lua_caller_settags(lua_State *L) {
 static int lua_caller_setrequiredtags(lua_State *L)
 {
 	lua_getglobal(L, "__thread");
-	int thd = lua_tonumber(L, -1);
+	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_SetRequiredTags(L, cfile);
@@ -90,7 +90,7 @@ static int lua_caller_setrequiredtags(lua_State *L)
 static int lua_caller_checktagsvalues(lua_State *L)
 {
 	lua_getglobal(L, "__thread");
-	int thd = lua_tonumber(L, -1);
+	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_CheckTagsValues(L, cfile);
@@ -106,7 +106,7 @@ static int lua_caller_checktagsvalues(lua_State *L)
 static int lua_caller_rename(lua_State *L)
 {
 	lua_getglobal(L, "__thread");
-	int thd = lua_tonumber(L, -1);
+	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_Rename(L, cfile);
@@ -122,7 +122,7 @@ static int lua_caller_rename(lua_State *L)
 static int lua_caller_move(lua_State *L)
 {
 	lua_getglobal(L, "__thread");
-	int thd = lua_tonumber(L, -1);
+	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_Move(L, cfile);
@@ -138,7 +138,7 @@ static int lua_caller_move(lua_State *L)
 static int lua_caller_delete(lua_State *L)
 {
 	lua_getglobal(L, "__thread");
-	int thd = lua_tonumber(L, -1);
+	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_Delete(L, cfile);
@@ -172,14 +172,14 @@ time_t datetime_raw = 0;
 int main(int argc, char *argv[]) {
 	// only one instance of program is allowed
 	// using named mutex
-	boost::interprocess::named_mutex global_mutex(boost::interprocess::open_or_create, "medialibcleaner_mutex_named");
+	/*boost::interprocess::named_mutex global_mutex(boost::interprocess::open_or_create, "medialibcleaner_mutex_named");
 	boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(global_mutex, boost::interprocess::try_to_lock);
 
 	if (!lock)
 	{
-		std::wcout << L"CRITICAL ERROR: Only one instance of program is allowed. Please kill or wait for the first instance to complete, then re-launch the program.";
+		std::wcout << L"CRITICAL ERROR: Only one instance of program is allowed. Please kill or wait for the first instance to complete, then re-launch the program." << std::endl;
 		return 4;
-	}
+	}*/
 
 	//debug
 	static std::basic_stringbuf<std::ostream::char_type> buf;
@@ -192,14 +192,40 @@ int main(int argc, char *argv[]) {
 	// it wasn't so easy to find though...
 	setlocale(LC_ALL, "");
 
-	std::wcout << L"Beginning program..." << std::endl; //d
+	std::wcout << L"Beginning program..." << std::endl;
 
-	// reading config file into wstring
-	std::wifstream wfile(L"C:\\Users\\Szymon\\Documents\\test.lua");
-	wfile.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
-	std::wstringstream wss;
-	wss << wfile.rdbuf();
-	std::wstring wconfig = wss.str();
+	if (argc < 3)
+	{
+		// will print usage() once it will be completed
+		// for now, simple debug message
+		std::wcout << L"Usage: mlc.exe --config <path-to-config-lua-file>" << std::endl;
+		return 5;
+	}
+
+	std::wstring wconfig;
+	if (!strcmp(argv[1], "--config"))
+	{
+		std::string rpath = argv[2];
+		// check if path exists, then continue
+		if (!boost::filesystem::exists(rpath) || !boost::filesystem::is_regular_file(rpath)) {
+			std::wcout << L"Config LUA file does not exists in the given path. Please make sure file exists and path given is correct." << std::endl;
+			std::wcout << L"Usage: mlc.exe --config <path-to-config-lua-file>" << std::endl;
+			programlog->Log(L"Main", L"Config LUA file does not exists in the given path. Please make sure file exists and path given is correct.", 1);
+			return 6;
+		}
+
+		// reading config file into wstring
+		std::wifstream wfile(s2ws(rpath));
+		wfile.imbue(std::locale(std::locale::empty(), new std::codecvt_utf8<wchar_t>));
+		std::wstringstream wss;
+		wss << wfile.rdbuf();
+		wconfig = wss.str();
+	}
+	else
+	{
+		std::wcout << L"Usage: mlc.exe --config <path-to-config-lua-file>" << std::endl;
+		return 7;
+	}
 
 	// converting from wstring to string
 	// IMPORTANT: uses Windows.h functions
@@ -469,7 +495,7 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, std::unique_ptr<MediaLibCleaner::LogProgram>* lp)
 {
 	std::wstring new_config, wid;
-	lua_State *L;
+	lua_State *L = nullptr;
 	std::string nc;
 	int s = 0, id = 0;
 	MediaLibCleaner::File* cfile;

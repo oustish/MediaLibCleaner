@@ -71,7 +71,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 	try {
 		this->d_file_create_datetime_raw = attrib.st_ctime;
 		this->d_file_mod_datetime_raw = attrib.st_mtime;
-		this->d_file_size_bytes = fs::file_size(temp);
+		this->d_file_size_bytes = static_cast<size_t>(fs::file_size(temp));
 	}
 	catch (const boost::filesystem::filesystem_error& e)
 	{
@@ -1550,7 +1550,7 @@ time_t MediaLibCleaner::File::GetFileModDatetimeRaw() {
 * @return File size in human readable format
 */
 std::wstring MediaLibCleaner::File::GetFileSize() {
-	float temp = this->d_file_size_bytes / 1048576; // MB
+	float temp = static_cast<float>(this->d_file_size_bytes) / 1048576; // MB
 
 	if (this->d_file_size_bytes <= 1023) { // B
 		return std::to_wstring(this->d_file_size_bytes) + L"B";
