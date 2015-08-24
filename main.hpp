@@ -1,3 +1,11 @@
+/**
+@file
+@author Szymon Oracki <szymon.oracki@oustish.pl>
+@version 0.4
+
+This file is a start point header file for entire application.
+*/
+
 #include <iostream>
 #include <memory> // for unique_ptr
 #include <fstream> // for file opening

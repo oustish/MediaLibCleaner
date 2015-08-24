@@ -1,6 +1,11 @@
+/**
+@file
+@author Szymon Oracki <szymon.oracki@oustish.pl>
+@version 0.4
+
+This file contains definitions of all helper functions
+*/
 #include "helpers.hpp"
-#include <oaidl.h>
-#include <stdlib.h>
 
 /**
 * Function replacing every occurence of one string with another in given string.
@@ -42,7 +47,13 @@ void replaceAll(std::wstring& str, const std::wstring& from, const std::wstring&
 	}
 }
 
-
+/**
+* Function processing given timestamp and returning date in ISO-8601 complaint std::string 
+*
+* @param[in] t  Timestamp to be changed into ISO-8601 complaint date format as std::string
+*
+* @return ISO-8601 complaint std::string of given timestamp
+*/
 std::string get_date_iso_8601(time_t t) {
 	using namespace boost::posix_time;
 
@@ -87,6 +98,13 @@ std::string get_date_iso_8601(time_t t) {
 	return ss;
 }
 
+/**
+* Function processing given timestamp and returning date in RFC2822 complaint std::string
+*
+* @param[in] t  Timestamp to be changed into RFC2822 complaint date format as std::string
+*
+* @return RFC2822 complaint std::string of given timestamp
+*/
 std::string get_date_rfc_2822(time_t t) {
 	using namespace boost::posix_time;
 
@@ -129,16 +147,37 @@ std::string get_date_rfc_2822(time_t t) {
 	return ss;
 }
 
+/**
+* Function processing given timestamp and returning date in ISO-8601 complaint std::string
+*
+* @param[in] t  Timestamp to be changed into ISO-8601 complaint date format and returned as std::wstring
+*
+* @return ISO-8601 complaint std::wstring of given timestamp
+*/
 std::wstring get_date_iso_8601_wide(time_t t) {
 	return s2ws(get_date_iso_8601(t));
 }
 
+/**
+* Function processing given timestamp and returning date in IRFC2822 complaint std::string
+*
+* @param[in] t  Timestamp to be changed into RFC2822 complaint date format and returned as std::wstring
+*
+* @return RFC2822 complaint std::wstring of given timestamp
+*/
 std::wstring get_date_rfc_2822_wide(time_t t) {
 	return s2ws(get_date_rfc_2822(t));
 }
 
 #ifdef WIN32
 
+/**
+* Function to change encoding of given wide char string and convert it to normal std::string
+*
+* @param[in] win  Input wide string to be converted
+*
+* @return std::string representation of wide string given as parameter
+*/
 std::string ws2s(const std::wstring& win)
 {
 	int len;
@@ -151,6 +190,13 @@ std::string ws2s(const std::wstring& win)
 	return r;
 }
 
+/**
+* Function to change encoding of given multi byte string and convert it to wide string
+*
+* @param[in] in  Input string to be converted
+*
+* @return std::wstring representation of normal string given as parameter
+*/
 std::wstring s2ws(const std::string& in)
 {
 	int len;
@@ -167,6 +213,13 @@ std::wstring s2ws(const std::string& in)
 
 #else
 
+/**
+* Function to change encoding of given wide char string and convert it to normal std::string
+*
+* @param[in] win  Input wide string to be converted
+*
+* @return std::string representation of wide string given as parameter
+*/
 std::string ws2s(const std::wstring& win)
 {
 	int lens = win.length();
@@ -181,6 +234,13 @@ std::string ws2s(const std::wstring& win)
 	return "";
 }
 
+/**
+* Function to change encoding of given multi byte string and convert it to wide string
+*
+* @param[in] in  Input string to be converted
+*
+* @return std::wstring representation of normal string given as parameter
+*/
 std::wstring s2ws(const std::string& in)
 {
 	int lens = in.length();

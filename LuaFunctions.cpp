@@ -1,7 +1,7 @@
 /**
  @file
  @author Szymon Oracki <szymon.oracki@oustish.pl>
- @version 0.1
+ @version 0.4
 
  This file contains definitions of all functions used as lua functions (via lua_register() function)
  */
@@ -175,6 +175,7 @@ int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile)
  *
  * @param[in] L			lua_State object to config file
  * @param[in] status	Integer containing lua processor status code
+ * @param[in] programlog unique_ptr to LogProgram object for logging purposses
  */
 void lua_ErrorReporting(lua_State *L, int status, std::unique_ptr<MediaLibCleaner::LogProgram>* programlog)
 {

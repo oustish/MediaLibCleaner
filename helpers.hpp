@@ -1,5 +1,15 @@
+/**
+@file
+@author Szymon Oracki <szymon.oracki@oustish.pl>
+@version 0.4
+
+This file contains declarations of all helper functions
+*/
+
 #include <iostream>
 #include <time.h>
+#include <oaidl.h>
+#include <stdlib.h>
 
 #include <boost/date_time/c_local_time_adjustor.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>

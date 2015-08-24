@@ -1,7 +1,7 @@
 /**
  * @file
  * @author Szymon Oracki <szymon.oracki@oustish.pl>
- * @version 0.1
+ * @version 0.4
  *
  *This file is a start point for entire application.
  */
@@ -32,10 +32,13 @@ int error_level = 0;
  */
 std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAggregator;
 
+/**
+* Global variable containing all currently processed MediaLibCleaner::File object by different threads
+*/
 MediaLibCleaner::File** current_file_thd;
 
 /**
- * Function calling lua_IsAuidoFile() function. This function is registered withing lua processor!
+ * Function calling lua_IsAudioFile() function. This function is registered withing lua processor!
  *
  * @param[in] L	lua_State object to config file
  *
@@ -146,13 +149,24 @@ static int lua_caller_delete(lua_State *L)
 
 
 
-
+/**
+* Global variable containing MediaLibCleaner::LogAlert object
+*/
 std::unique_ptr<MediaLibCleaner::LogAlert> alertlog;
 
+/**
+* Global variable containing MediaLibCleaner::LogProgram object
+*/
 std::unique_ptr<MediaLibCleaner::LogProgram> programlog;
 
-// some variables required for aliases
+/**
+* Global variable containing files total count (used for alias)
+*/
 int total_files = 0;
+
+/**
+* Global variable containing timestamp of program startup
+*/
 time_t datetime_raw = 0;
 
 
@@ -378,8 +392,6 @@ int main(int argc, char *argv[]) {
  *
  * This functions purpose is to check for errors after *.lua config file
  * has been processed and, if present, print them to std::cerr.
- * If error appeared after System initialization then
- * std::cerr may be normal file defined by the user.
  *
  * @param[in] L       A lua_State object holding information about lua processor
  * @param[in] status  Integer with status code returned after calling lua_pcall() or similar function
@@ -403,8 +415,8 @@ void lua_error_reporting(lua_State *L, int status) {
  *
  * @see http://flute.eti.pg.gda.pl/trac/student-projects/wiki/MediaLibCleaner/Aliases for aliases definitions
  *
- * @param[in]	_config	    String with config file content. Any format is accepted.
- * @param[in]	_audiofile  std::unique_ptr to MediaLibCleaner::AudioFile object representing current file
+ * @param[in]	wcfg	   String with config file content. Any format is accepted.
+ * @param[in]	audiofile  std::unique_ptr to MediaLibCleaner::AudioFile object representing current file
  *
  * @return String containing config file with aliases replaced
  */
@@ -442,7 +454,7 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 	replaceAll(newc, L"%_codec%", audiofile->GetCodec());
 	replaceAll(newc, L"%_cover_mimetype%", audiofile->GetCoverMimetype());
 	replaceAll(newc, L"%_cover_size%", std::to_wstring(audiofile->GetCoverSize()));
-	replaceAll(newc, L"%_coder_type%", audiofile->GetCoverType());
+	replaceAll(newc, L"%_cover_type%", audiofile->GetCoverType());
 	replaceAll(newc, L"%_covers%", std::to_wstring(audiofile->GetCovers()));
 	replaceAll(newc, L"%_length%", audiofile->GetLengthAsString());
 	replaceAll(newc, L"%_length_seconds%", std::to_wstring(audiofile->GetLength()));
@@ -492,6 +504,18 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 	return newc;
 }
 
+/**
+* Function processing all files inside fA object according to rules in wconfig LUA file
+*
+* Function calls lua functions required to process given file according to rules specified by the user.
+* It uses OpenMP directives to force the code to run in multi-thread environment.
+* Function gets MediaLibCleaner::File object, replaces all alias occurences in wconfig, then registers all LUA functions and executes the LUA script.
+* Each started threat exits as soon as fA->next() method will return nullptr; function exits as soon as all threads will exit (OpenMP sets auto barrier at the end of the block).
+*
+* @param[in] wconfig std::wstring containing LUA config file
+* @param[in] fA MediaLibCleaner::FilesAggregator object containing all files that will be processed
+* @param[in] lp MediaLibCleaner::LogProgram object for logging purposses
+*/
 void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, std::unique_ptr<MediaLibCleaner::LogProgram>* lp)
 {
 	std::wstring new_config, wid;
@@ -564,7 +588,22 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 	}
 }
 
-void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregator* pathl, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la, std::string pth, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, int* tf)
+/**
+* Function scanning given directory to find all files
+*
+* Function calls all required functions and creates MediaLibCleaner::File object for each file found in previous steps.
+* Each started threat exits as soon as pathl->next() method will return nullptr; function exits as soon as all threads will exit (OpenMP sets auto barrier at the end of the block).
+*
+* @param[in] dfcl std::list object containing MediaLibCleaner::DFC objects
+* @param[in] pathl MediaLibCleaner::PathsAggregator object containing all files paths
+* @param[in] lp MediaLibCleaner::LogProgram object for logging purposes
+* @param[in] la MediaLibCleaner::LogAlert object for logging purposes
+* @param[in] pth Scanning insertion path
+* @param[out] fA std::unique_ptr to MediaLibCleaner::FilesAggregator object into which all new MediaLibCleaner::File objects will be saved
+* @param[out] tf Total files amount (global)
+*/
+void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregator* pathl, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la,
+	std::string pth, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, int* tf)
 {
 	std::mutex dfcl_mutex;
 	MediaLibCleaner::DFC *currdfc = MediaLibCleaner::AddDFC(dfcl, pth, &dfcl_mutex, lp, la);

@@ -1,7 +1,7 @@
 /**
  * @file
  * @author Szymon Oracki <szymon.oracki@oustish.pl>
- * @version 0.1
+ * @version 0.4
  *
  * This file contains definitions of all methods for MediaLibCleaner namespace
  */
@@ -14,8 +14,10 @@
  * Constructor for MediaLibCleaner::File class.
  * 
  * File class constructor creaties instance of TagLib::FileRef object (or simillar) and reads all common tags from the file.
- * @param[in] path  Path to audio file this instance will represent
- * @param[in] dfc	An instance of MediaLibCleaner::DFC
+ * @param[in] path        Path to audio file this instance will represent
+ * @param[in] dfc	      An instance of MediaLibCleaner::DFC
+ * @param[in] logprogram  std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposses
+ * @param[in] logalert    std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposses
  */
 MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert)
 {
@@ -643,15 +645,15 @@ std::wstring MediaLibCleaner::File::GetWWW() {
 /**
 * Method allowing for easy tags setting
 *
-* @param[in] id3tag ID3v2 frame name of given tag
-* @param[in] xiphtag XiphComment tag name
-* @param[in] apetag APEv2 tag name
-* @param]in] mp4tag M4A/MP4 tag name
-* @param[in] value New value of given tag
+* @param[in] id3tag   ID3v2 frame name of given tag
+* @param[in] xiphtag  XiphComment tag name
+* @param[in] apetag   APEv2 tag name
+* @param[in] mp4tag   M4A/MP4 tag name
+* @param[in] value    New value of given tag
 *
 * @return Status of changing tag value operation
 */
-bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiphtag, std::string apetag, std::string mp4tag, ::TagLib::String value)
+bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiphtag, std::string apetag, std::string mp4tag, TagLib::String value)
 {
 	if (this->isInitiated)
 	{
@@ -883,6 +885,8 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 /**
 * Method allowing to set \%artist% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetArtist(TagLib::String value)
@@ -921,6 +925,8 @@ bool MediaLibCleaner::File::SetArtist(TagLib::String value)
 /**
 * Method allowing to set \%title% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetTitle(TagLib::String value) {
@@ -957,6 +963,8 @@ bool MediaLibCleaner::File::SetTitle(TagLib::String value) {
 
 /**
 * Method allowing to set \%album% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -995,6 +1003,8 @@ bool MediaLibCleaner::File::SetAlbum(TagLib::String value) {
 /**
 * Method allowing to set \%genre% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetGenre(TagLib::String value) {
@@ -1031,6 +1041,8 @@ bool MediaLibCleaner::File::SetGenre(TagLib::String value) {
 
 /**
 * Method allowing to set \%comment% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1069,6 +1081,8 @@ bool MediaLibCleaner::File::SetComment(TagLib::String value) {
 /**
 * Method allowing to set \%track% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetTrack(TagLib::uint value) {
@@ -1105,6 +1119,8 @@ bool MediaLibCleaner::File::SetTrack(TagLib::uint value) {
 
 /**
 * Method allowing to set \%year% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1143,6 +1159,8 @@ bool MediaLibCleaner::File::SetYear(TagLib::uint value) {
 /**
 * Method allowing to set \%albumartist% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetAlbumArtist(TagLib::String value)
@@ -1154,6 +1172,8 @@ bool MediaLibCleaner::File::SetAlbumArtist(TagLib::String value)
 /**
 * Method allowing to set \%bpm% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetBPM(TagLib::String value) {
@@ -1163,6 +1183,8 @@ bool MediaLibCleaner::File::SetBPM(TagLib::String value) {
 
 /**
 * Method allowing to set \%copyright% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1174,6 +1196,8 @@ bool MediaLibCleaner::File::SetCopyright(TagLib::String value) {
 /**
 * Method allowing to set \%language% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetLanguage(TagLib::String value) {
@@ -1183,6 +1207,8 @@ bool MediaLibCleaner::File::SetLanguage(TagLib::String value) {
 
 /**
 * Method allowing to set \%length% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1194,6 +1220,8 @@ bool MediaLibCleaner::File::SetTagLength(TagLib::String value) {
 /**
 * Method allowing to set \%mood% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetMood(TagLib::String value) {
@@ -1203,6 +1231,8 @@ bool MediaLibCleaner::File::SetMood(TagLib::String value) {
 
 /**
 * Method allowing to set \%origalbum% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1214,6 +1244,8 @@ bool MediaLibCleaner::File::SetOrigAlbum(TagLib::String value) {
 /**
 * Method allowing to set \%origartist% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetOrigArtist(TagLib::String value) {
@@ -1223,6 +1255,8 @@ bool MediaLibCleaner::File::SetOrigArtist(TagLib::String value) {
 
 /**
 * Method allowing to set \%origfilename% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1234,6 +1268,8 @@ bool MediaLibCleaner::File::SetOrigFilename(TagLib::String value) {
 /**
 * Method allowing to set \%origyear% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetOrigYear(TagLib::String value) {
@@ -1243,6 +1279,8 @@ bool MediaLibCleaner::File::SetOrigYear(TagLib::String value) {
 
 /**
 * Method allowing to set \%publisher% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1254,6 +1292,8 @@ bool MediaLibCleaner::File::SetPublisher(TagLib::String value) {
 /**
 * Method allowing to set \%unsyncedlyrics% tag from an audio file
 *
+* @param[in] value  New value of the tag
+*
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetLyricsUnsynced(TagLib::String value) {
@@ -1263,6 +1303,8 @@ bool MediaLibCleaner::File::SetLyricsUnsynced(TagLib::String value) {
 
 /**
 * Method allowing to set \%www% tag from an audio file
+*
+* @param[in] value  New value of the tag
 *
 * @return Information if setting tag has completed successfully
 */
@@ -1607,7 +1649,7 @@ bool MediaLibCleaner::File::HasTag(std::wstring tag, TagLib::String val)
 }
 
 /**
-* Method checks if file has given tag
+* Method for renaming file
 *
 * @param[in] nname New file name
 *
@@ -1621,7 +1663,7 @@ bool MediaLibCleaner::File::Rename(std::wstring nname)
 }
 
 /**
-* Method checks if file has given tag
+* Method for moving file to new destination in the user filesystem
 *
 * @param[in] nloc New file location
 *
@@ -1635,7 +1677,7 @@ bool MediaLibCleaner::File::Move(std::wstring nloc)
 }
 
 /**
-* Method checks if file has given tag
+* Method for deleting given file
 *
 * @return Status of delete operation
 */
@@ -1646,7 +1688,15 @@ bool MediaLibCleaner::File::Delete()
 	return true;
 }
 
-
+/**
+ * Method for easy setting tag in the audio file using already existing methods.
+ * This method is for TagLib::String type of value variable
+ *
+ * @param[in] key  Tag name (wthout \% signs)
+ * @param[in] val  New tag value
+ *
+ * @return True if tag setting operation succeded, false otherwise
+ */
 bool MediaLibCleaner::File::SetTag(std::wstring key, TagLib::String val)
 {
 	if (key == L"artist")
@@ -1724,6 +1774,15 @@ bool MediaLibCleaner::File::SetTag(std::wstring key, TagLib::String val)
 	return false;
 }
 
+/**
+* Method for easy setting tag in the audio file using already existing methods.
+* This version is for TagLib::uint type of value variable
+*
+* @param[in] key  Tag name (wthout \% signs)
+* @param[in] val  New tag value
+*
+* @return True if tag setting operation succeded, false otherwise
+*/
 bool MediaLibCleaner::File::SetTag(std::wstring key, TagLib::uint val)
 {
 
@@ -1766,7 +1825,8 @@ MediaLibCleaner::DFC* MediaLibCleaner::File::GetDFC() {
 /**
  * MediaLibCleaner::FilesAggreagator constructor.
  *
- * @
+ * @param[in] logprogram  std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+ * @param[in] logalert    std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
  */
 MediaLibCleaner::FilesAggregator::FilesAggregator(std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert)
 {
@@ -1776,15 +1836,22 @@ MediaLibCleaner::FilesAggregator::FilesAggregator(std::unique_ptr<MediaLibCleane
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator", L"Creating object", 3);
 }
 
+/**
+ * MediaLibCleaner::FilesAggregator class destructor
+ */
 MediaLibCleaner::FilesAggregator::~FilesAggregator() {
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator", L"Calling destructor", 3);
 
-	std::list<MediaLibCleaner::File*>::iterator nd = this->end();
-	for (std::list<MediaLibCleaner::File*>::iterator it = this->begin(); it != nd; it++) {
+	auto nd = this->end();
+	for (auto it = this->begin(); it != nd; it++)
 		delete *it;
-	}
 }
 
+/**
+ * Method for adding MediaLibCleaner::File objects to FilesAggregator object. Uses mutex to prevent racing conditions.
+ *
+ * @param[in] file  New MediaLibCleaner::File object to be added
+ */
 void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *file) {
 	this->add_synch.lock();
 
@@ -1794,6 +1861,13 @@ void MediaLibCleaner::FilesAggregator::AddFile(MediaLibCleaner::File *file) {
 	this->add_synch.unlock();
 }
 
+/**
+ * Method for getting MediaLibCleaner::File object provided the object with given filepath exists in the FilesAggregator object. Uses mutex to prevent racing conditions.
+ *
+ * @param[in] filepath  Path of the MediaLibCleaner::File object to be returned
+ *
+ * @return Pointer to MediaLibCleaner::File object which path is identical to given filepath parameter
+ */
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring filepath) {
 	this->get_synch.lock();
 
@@ -1811,6 +1885,12 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring fi
 	return nullptr;
 }
 
+/**
+ * Method to get current MediaLibCleaner::File object selected in the FilesAggregator object.
+ * Usable only in single-thread environments (racing conditions!)
+ *
+ * @return Currently selected MediaLibCleaner::File object stored inside FilesAggregator object
+ */
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::CurrentFile() {
 	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
 	std::advance(it, this->cfile);
@@ -1818,14 +1898,29 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::CurrentFile() {
 	return *it;
 }
 
+/**
+ * Method to retrieve iterator pointing to the beginning of the MediaLibCleaner::File list
+ *
+ * @return Iterator pointing to the beginning of std::list containing MediaLibCleaner::File class objects
+ */
 std::list<MediaLibCleaner::File*>::iterator MediaLibCleaner::FilesAggregator::begin() {
 	return this->d_files.begin();
 }
 
+/**
+* Method to retrieve iterator pointing to the ending of the MediaLibCleaner::File list
+*
+* @return Iterator pointing to the ending of std::list containing MediaLibCleaner::File class objects
+*/
 std::list<MediaLibCleaner::File*>::iterator MediaLibCleaner::FilesAggregator::end() {
 	return this->d_files.end();
 }
 
+/**
+* Method to advance and retrieve next MediaLibCleaner::File object in the list
+*
+* @return Pointer to next MediaLibCleaner::File object
+*/
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
 	if (this->cfile == this->d_files.size() - 1) return nullptr;
 
@@ -1843,6 +1938,9 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::next() {
 	return *it;
 }
 
+/**
+* Method to return to the beginning of the std::list containing MediaLibCleaner::File class objects
+*/
 void MediaLibCleaner::FilesAggregator::rewind()
 {
 	this->get_synch.lock();
@@ -1865,7 +1963,8 @@ void MediaLibCleaner::FilesAggregator::rewind()
 /**
 * MediaLibCleaner::PathsAggreagator constructor.
 *
-* @
+* @param[in] logprogram  std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+* @param[in] logalert    std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
 */
 MediaLibCleaner::PathsAggregator::PathsAggregator(std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert)
 {
@@ -1875,10 +1974,18 @@ MediaLibCleaner::PathsAggregator::PathsAggregator(std::unique_ptr<MediaLibCleane
 	(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator", L"Creating object", 3);
 }
 
+/**
+ * MediaLibCleaner::PathsAggregator destructor
+ */
 MediaLibCleaner::PathsAggregator::~PathsAggregator() {
 	(*this->logprogram)->Log(L"MediaLibCleaner::PathsAggregator", L"Calling destructor", 3);
 }
 
+/**
+ * Method for adding new path to the list
+ *
+ * @param[in] path  New path to be added to the list
+ */
 void MediaLibCleaner::PathsAggregator::AddPath(boost::filesystem::path path) {
 	this->add_synch.lock();
 
@@ -1888,6 +1995,11 @@ void MediaLibCleaner::PathsAggregator::AddPath(boost::filesystem::path path) {
 	this->add_synch.unlock();
 }
 
+/**
+ * Method to retrieve currently selected path. Usable in single-thread environments (racing conditions!)
+ *
+ * @return boost::filesystem::path object containing currently selected path
+ */
 boost::filesystem::path MediaLibCleaner::PathsAggregator::CurrentPath() {
 	std::list<boost::filesystem::path>::iterator it = this->begin();
 	std::advance(it, this->cfile);
@@ -1895,14 +2007,29 @@ boost::filesystem::path MediaLibCleaner::PathsAggregator::CurrentPath() {
 	return *it;
 }
 
+/**
+* Method to retrieve iterator pointing to the beginning of the boost::filesystem::path list
+*
+* @return Iterator pointing to the beginning of std::list containing boost::filesystem::path objects
+*/
 std::list<boost::filesystem::path>::iterator MediaLibCleaner::PathsAggregator::begin() {
 	return this->d_files.begin();
 }
 
+/**
+* Method to retrieve iterator pointing to the ending of the boost::filesystem::path list
+*
+* @return Iterator pointing to the ending of std::list containing boost::filesystem::path objects
+*/
 std::list<boost::filesystem::path>::iterator MediaLibCleaner::PathsAggregator::end() {
 	return this->d_files.end();
 }
 
+/**
+* Method to advance and retrieve next boost::filesystem::path object in the list
+*
+* @return boost::filesystem::path object containing next path
+*/
 boost::filesystem::path MediaLibCleaner::PathsAggregator::next() {
 	if (this->cfile == this->d_files.size() - 1)
 	{
@@ -1924,6 +2051,9 @@ boost::filesystem::path MediaLibCleaner::PathsAggregator::next() {
 	return *it;
 }
 
+/**
+* Method to return to the beginning of the std::list containing boost::filesystem::path objects
+*/
 void MediaLibCleaner::PathsAggregator::rewind()
 {
 	this->get_synch.lock();
@@ -1944,7 +2074,13 @@ void MediaLibCleaner::PathsAggregator::rewind()
 
 
 
-
+/**
+ * MediaLibCleaner::DFC constructor
+ *
+ * @param[in] path        Path for new DFC object
+ * @param[in] logprogram  std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+ * @param[in] logalert    std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
+ */
 MediaLibCleaner::DFC::DFC(std::wstring path, std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert) {
 	this->path = path;
 	this->count = 0;
@@ -1954,19 +2090,37 @@ MediaLibCleaner::DFC::DFC(std::wstring path, std::unique_ptr<MediaLibCleaner::Lo
 	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Created object for: " + path, 3);
 }
 
+/**
+ * MediaLibCleaner::DFC destructor.
+ */
 MediaLibCleaner::DFC::~DFC()
 {
 	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Destructor called: " + this->path, 3);
 }
 
+/**
+ * Method for retrieveing value of the counter inside DFC object.
+ * Please note that this value may not be final during scan() operation!
+ *
+ * @return Amount of files inside given folder the DFC object represents
+ */
 int MediaLibCleaner::DFC::GetCounter() {
 	return this->count;
 }
 
+/**
+ * Method for retrieving path of the DFC object
+ *
+ * @return Path of the folder given DFC object represents.
+ */
 std::wstring MediaLibCleaner::DFC::GetPath() {
 	return this->path;
 }
 
+/**
+ * Method to increase counter inside given DFC object.
+ * Using method instead of operator overloading because operator overloading created unwanted results.
+ */
 void MediaLibCleaner::DFC::IncCount() {
 	(*this->logprogram)->Log(L"MediaLibCleaner::DFC::IncCount", L"Incrementing DFC count", 3);
 	this->count++;
@@ -1975,7 +2129,11 @@ void MediaLibCleaner::DFC::IncCount() {
 
 
 
-
+/**
+* MediaLibCleaner::LogAlert constructor
+*
+* @param[in] filename  Path to log file
+*/
 MediaLibCleaner::LogAlert::LogAlert(std::wstring filename)
 {
 	if (filename != L"-") {
@@ -1985,6 +2143,9 @@ MediaLibCleaner::LogAlert::LogAlert(std::wstring filename)
 	}
 }
 
+/**
+* MediaLibCleaner::LogAlert destructor
+*/
 MediaLibCleaner::LogAlert::~LogAlert()
 {
 	this->synch.lock();
@@ -1993,6 +2154,9 @@ MediaLibCleaner::LogAlert::~LogAlert()
 	this->Close();
 }
 
+/**
+* Method to close output stream
+*/
 void MediaLibCleaner::LogAlert::Close()
 {
 	if (this->outputfile.is_open())
@@ -2002,17 +2166,29 @@ void MediaLibCleaner::LogAlert::Close()
 	}
 }
 
+/**
+* Method to flush buffer and save its content to output file
+*/
 void MediaLibCleaner::LogAlert::Flush()
 {
 	if (this->outputfile.is_open())
 		this->outputfile.flush();
 }
 
+/**
+* Method to check if output stream is still open
+*/
 bool MediaLibCleaner::LogAlert::IsOpen()
 {
 	return this->outputfile.is_open();
 }
 
+/**
+* Method to write message to the log output stream
+*
+* @param[in] module   Module name which is logging given message
+* @param[in] message  Message to be written into log file
+*/
 void MediaLibCleaner::LogAlert::Log(std::wstring module, std::wstring message)
 {
 	this->synch.lock();
@@ -2025,7 +2201,12 @@ void MediaLibCleaner::LogAlert::Log(std::wstring module, std::wstring message)
 
 
 
-
+/**
+* MediaLibCleaner::LogProgram constructor
+*
+* @param[in] filename          Path to log file
+* @param[in] init_debug_level  Inital debug level
+*/
 MediaLibCleaner::LogProgram::LogProgram(std::wstring filename, int init_debug_level)
 {
 	if (filename != L"-") {
@@ -2037,6 +2218,9 @@ MediaLibCleaner::LogProgram::LogProgram(std::wstring filename, int init_debug_le
 	}
 }
 
+/**
+* MediaLibCleaner::LogProgram destructor
+*/
 MediaLibCleaner::LogProgram::~LogProgram()
 {
 	this->synch.lock();
@@ -2045,6 +2229,9 @@ MediaLibCleaner::LogProgram::~LogProgram()
 	this->Close();
 }
 
+/**
+* Method to close output stream
+*/
 void MediaLibCleaner::LogProgram::Close()
 {
 	if (this->outputfile.is_open())
@@ -2054,17 +2241,30 @@ void MediaLibCleaner::LogProgram::Close()
 	}
 }
 
+/**
+* Method to flush buffer and save its content to output file
+*/
 void MediaLibCleaner::LogProgram::Flush()
 {
 	if (this->outputfile.is_open())
 		this->outputfile.flush();
 }
 
+/**
+* Method to check if output stream is still open
+*/
 bool MediaLibCleaner::LogProgram::IsOpen()
 {
 	return this->outputfile.is_open();
 }
 
+/**
+* Method to write message to the log output stream
+*
+* @param[in] module       Module name which is logging given message
+* @param[in] message      Message to be written into log file
+* @param[in] debug_level  Parameter containing info about current message priority level
+*/
 void MediaLibCleaner::LogProgram::Log(std::wstring module, std::wstring message, int debug_level)
 {
 	if (this->init_debug_level >= debug_level) {
@@ -2088,7 +2288,19 @@ void MediaLibCleaner::LogProgram::Log(std::wstring module, std::wstring message,
 	}
 }
 
-MediaLibCleaner::DFC* MediaLibCleaner::AddDFC(std::list<MediaLibCleaner::DFC*>* dfc_list, boost::filesystem::path pth, std::mutex* synch, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
+/**
+* Method to add or create DFC object (depending on its presence in dfc_list).
+* If given path has already assigned DFC object it is returned; if not, new DFC object is created and returned.
+* Uses mutex to prevent racing conditions.
+*
+* @param[in,out] dfc_list  List of DFC objects
+* @param[in]     pth       Path to directory
+* @param[in]     synch     std::mutex used to prevent racing conditions
+* @param[in]     lp        std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+* @param[in]     la        std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
+*/
+MediaLibCleaner::DFC* MediaLibCleaner::AddDFC(std::list<MediaLibCleaner::DFC*>* dfc_list, boost::filesystem::path pth, std::mutex* synch,
+	std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
 	synch->lock();
 

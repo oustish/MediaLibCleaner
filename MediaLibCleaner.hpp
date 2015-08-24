@@ -1,7 +1,7 @@
 /**
  * @file
  * @author Szymon Oracki <szymon.oracki@oustish.pl>
- * @version 0.1
+ * @version 0.4
  *
  * File contains declaration of every class, field and method in MediaLibCleaner namespace
  */
@@ -90,7 +90,14 @@ namespace MediaLibCleaner
 		bool IsOpen();
 
 	private:
+		/**
+		* Wide output stream represeting log file
+		*/
 		std::wofstream outputfile;
+
+		/**
+		* std::mutex protecting all Log write operations from racing conditions
+		*/
 		std::mutex synch;
 	};
 
@@ -112,25 +119,50 @@ namespace MediaLibCleaner
 		bool IsOpen();
 
 	private:
+		/**
+		* Wide output stream represeting log file
+		*/
 		std::wofstream outputfile;
+
+		/**
+		* Initial messages level required to be written into log
+		*/
 		int init_debug_level;
+
+		/**
+		* std::mutex protecting all Log write operations from racing conditions
+		*/
 		std::mutex synch;
 	};
 
 	/**
 	 * @class DFC MediaLibCleaner.hpp
 	 *
-	 * Class MediaLibCleaner::DFC (Directory Files Counter) is a class shared amongst all MediaLibCleaner::File objects
+	 * Class MediaLibCleaner::DFC (Directory Files Counter) is a class shared amongst all MediaLibCleaner::File objects.
 	 * It allows all those objects to know how much audio files are there in each directory
 	 */
 	class DFC {
 
 	protected:
+		/**
+		* Path of the directory given DFC object represents
+		*/
 		std::wstring path;
+
+		/**
+		* Amount of files found in given directory
+		*/
 		int count;
+
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
+		*/
 		std::unique_ptr<LogAlert>* logalert;
+
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+		*/
 		std::unique_ptr<LogProgram>* logprogram;
-		int tid;
 
 	public:
 		DFC(std::wstring, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
@@ -334,16 +366,40 @@ namespace MediaLibCleaner
 		*/
 		bool isInitiated = false;
 
+		/**
+		 * Pointer to MediaLibCleaner::DFC object representing folder in which given File is located
+		 */
 		DFC* d_dfc = nullptr;
 
+		/**
+		 * Variable allowing for easy access to some of the tags and properities inside audio file
+		 */
 		std::unique_ptr<TagLib::FileRef> fileref;
 
+		/**
+		 * TagLib::MPEG::File object representing MP3 file (if file represented by given File object is in fact MP3 file)
+		 */
 		std::unique_ptr<TagLib::MPEG::File> taglib_file_mp3;
+		/**
+		* TagLib::Ogg::Vorbis::File object representing OGG Vorbis file (if file represented by given File object is in fact OGG Vorbis file)
+		*/
 		std::unique_ptr<TagLib::Ogg::Vorbis::File> taglib_file_ogg;
+		/**
+		* TagLib::MPEG::File object representing FLAC file (if file represented by given File object is in fact FLAC file)
+		*/
 		std::unique_ptr<TagLib::FLAC::File> taglib_file_flac;
+		/**
+		* TagLib::MPEG::File object representing M4A file (if file represented by given File object is in fact M4A file)
+		*/
 		std::unique_ptr<TagLib::MP4::File> taglib_file_m4a;
 
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
+		*/
 		std::unique_ptr<LogAlert>* logalert;
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+		*/
 		std::unique_ptr<LogProgram>* logprogram;
 
 		bool setTagUniversal(std::string id3tag, std::string xiphtag, std::string apetag, std::string mp4tag, TagLib::String value = TagLib::String::null);
@@ -458,13 +514,44 @@ namespace MediaLibCleaner
 	class FilesAggregator {
 
 	protected:
+		/**
+		* std::list of pointers to MediaLibCleaner::File objects
+		*/
 		std::list<File*> d_files;
+
+		/**
+		* Current file pointer
+		*/
 		int cfile = 0;
+
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
+		*/
 		std::unique_ptr<LogAlert>* logalert;
+
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+		*/
 		std::unique_ptr<LogProgram>* logprogram;
+
+		/**
+		* std::mutex protecting all add operations from racing conditions
+		*/
 		std::mutex add_synch;
+
+		/**
+		* std::mutex protecting all get operations from racing conditions
+		*/
 		std::mutex get_synch;
+		
+		/**
+		* std::mutex protecting all next operations from racing conditions
+		*/
 		std::mutex next_synch;
+
+		/**
+		* std::mutex protecting all rewind operations from racing conditions
+		*/
 		std::mutex rewind_synch;
 
 
@@ -491,13 +578,44 @@ namespace MediaLibCleaner
 	class PathsAggregator {
 
 	protected:
+		/**
+		* std::list containing all paths to files
+		*/
 		std::list<boost::filesystem::path> d_files;
+
+		/**
+		* Pointer to current file
+		*/
 		int cfile = 0;
+
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
+		*/
 		std::unique_ptr<LogAlert>* logalert;
+
+		/**
+		* std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
+		*/
 		std::unique_ptr<LogProgram>* logprogram;
+
+		/**
+		* std::mutex protecting all add operations from racing conditions
+		*/
 		std::mutex add_synch;
+
+		/**
+		* std::mutex protecting all get operations from racing conditions
+		*/
 		std::mutex get_synch;
+
+		/**
+		* std::mutex protecting all next operations from racing conditions
+		*/
 		std::mutex next_synch;
+
+		/**
+		* std::mutex protecting all rewind operations from racing conditions
+		*/
 		std::mutex rewind_synch;
 
 

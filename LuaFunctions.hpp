@@ -1,7 +1,7 @@
 /**
 * @file
 * @author Szymon Oracki <szymon.oracki@oustish.pl>
-* @version 0.1
+* @version 0.4
 *
 * This file contains declarations of all functions used as lua functions (via lua_register() function)
 */
