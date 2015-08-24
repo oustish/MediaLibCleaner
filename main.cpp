@@ -173,11 +173,11 @@ int main(int argc, char *argv[]) {
 	// only one instance of program is allowed
 	// using named mutex
 	boost::interprocess::named_mutex global_mutex(boost::interprocess::open_or_create, "medialibcleaner_mutex_named");
-	bool res = global_mutex.try_lock();
+	boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(global_mutex, boost::interprocess::try_to_lock);
 
-	if (!res)
+	if (!lock)
 	{
-		std::wcout << L"Only one instance of the program is allowed. Exiting...";
+		std::wcout << L"CRITICAL ERROR: Only one instance of program is allowed. Please kill or wait for the first instance to complete, then re-launch the program.";
 		return 4;
 	}
 
@@ -335,9 +335,6 @@ int main(int argc, char *argv[]) {
 	programlog->Log(L"Main", L"Total files: " + std::to_wstring(total_files), 3);
 
 	programlog->Log(L"Main", L"Program finished", 3);
-
-	// unlocking named mutex
-	global_mutex.unlock();
 
 	// http://www.etfroundup.com/wp-content/uploads/2014/11/thats_all_folks_wallpaper.jpg
 	return 0;

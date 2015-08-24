@@ -14,6 +14,7 @@
 #include <boost/locale.hpp>
 
 #include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
 
 #include "LuaFunctions.hpp"
 #include "helpers.hpp"
