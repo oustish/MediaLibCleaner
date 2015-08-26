@@ -42,118 +42,6 @@ std::unique_ptr<MediaLibCleaner::FilesAggregator> filesAggregator;
 MediaLibCleaner::File** current_file_thd;
 
 /**
- * Function calling lua_IsAudioFile() function. This function is registered withing lua processor!
- *
- * @param[in] L	lua_State object to config file
- *
- * @return Number of output arguments on stack for lua processor
- */
-static int lua_caller_isaudiofile(lua_State *L) {
-	lua_getglobal(L, "__thread");
-	int thd = static_cast<int>(lua_tonumber(L, -1));
-	auto cfile = current_file_thd[thd];
-
-	return lua_IsAudioFile(L, cfile);
-}
-
-/**
- * Function calling lua_SetTags() function. This function is registered within lua processor!
- *
- * @param[in] L lua_State object to config file
- *
- * @return Number of output arguments on stack for lua processor
- */
-static int lua_caller_settags(lua_State *L) {
-	lua_getglobal(L, "__thread");
-	int thd = static_cast<int>(lua_tonumber(L, -1));
-	auto cfile = current_file_thd[thd];
-
-	return lua_SetTags(L, cfile);
-}
-
-/**
-* Function calling lua_SetRequiredTags() function. This function is registered within lua processor!
-*
-* @param[in] L lua_State object to config file
-*
-* @return Number of output arguments on stack for lua processor
-*/
-static int lua_caller_setrequiredtags(lua_State *L)
-{
-	lua_getglobal(L, "__thread");
-	int thd = static_cast<int>(lua_tonumber(L, -1));
-	auto cfile = current_file_thd[thd];
-
-	return lua_SetRequiredTags(L, cfile);
-}
-
-/**
-* Function calling lua_CheckTagsValues() function. This function is registered within lua processor!
-*
-* @param[in] L lua_State object to config file
-*
-* @return Number of output arguments on stack for lua processor
-*/
-static int lua_caller_checktagsvalues(lua_State *L)
-{
-	lua_getglobal(L, "__thread");
-	int thd = static_cast<int>(lua_tonumber(L, -1));
-	auto cfile = current_file_thd[thd];
-
-	return lua_CheckTagsValues(L, cfile);
-}
-
-/**
-* Function calling lua_Rename() function. This function is registered within lua processor!
-*
-* @param[in] L lua_State object to config file
-*
-* @return Number of output arguments on stack for lua processor
-*/
-static int lua_caller_rename(lua_State *L)
-{
-	lua_getglobal(L, "__thread");
-	int thd = static_cast<int>(lua_tonumber(L, -1));
-	auto cfile = current_file_thd[thd];
-
-	return lua_Rename(L, cfile);
-}
-
-/**
-* Function calling lua_Move() function. This function is registered within lua processor!
-*
-* @param[in] L lua_State object to config file
-*
-* @return Number of output arguments on stack for lua processor
-*/
-static int lua_caller_move(lua_State *L)
-{
-	lua_getglobal(L, "__thread");
-	int thd = static_cast<int>(lua_tonumber(L, -1));
-	auto cfile = current_file_thd[thd];
-
-	return lua_Move(L, cfile);
-}
-
-/**
-* Function calling lua_Delete() function. This function is registered within lua processor!
-*
-* @param[in] L lua_State object to config file
-*
-* @return Number of output arguments on stack for lua processor
-*/
-static int lua_caller_delete(lua_State *L)
-{
-	lua_getglobal(L, "__thread");
-	int thd = static_cast<int>(lua_tonumber(L, -1));
-	auto cfile = current_file_thd[thd];
-
-	return lua_Delete(L, cfile);
-}
-
-
-
-/**
 * Global variable containing MediaLibCleaner::LogAlert object
 */
 std::unique_ptr<MediaLibCleaner::LogAlert> alertlog;
@@ -172,6 +60,116 @@ int total_files = 0;
 * Global variable containing timestamp of program startup
 */
 time_t datetime_raw = 0;
+
+/**
+ * Function calling lua_IsAudioFile() function. This function is registered withing lua processor!
+ *
+ * @param[in] L	lua_State object to config file
+ *
+ * @return Number of output arguments on stack for lua processor
+ */
+static int lua_caller_isaudiofile(lua_State *L) {
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_IsAudioFile(L, cfile, &programlog, &alertlog);
+}
+
+/**
+ * Function calling lua_SetTags() function. This function is registered within lua processor!
+ *
+ * @param[in] L lua_State object to config file
+ *
+ * @return Number of output arguments on stack for lua processor
+ */
+static int lua_caller_settags(lua_State *L) {
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_SetTags(L, cfile, &programlog, &alertlog);
+}
+
+/**
+* Function calling lua_SetRequiredTags() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_setrequiredtags(lua_State *L)
+{
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_SetRequiredTags(L, cfile, &programlog, &alertlog);
+}
+
+/**
+* Function calling lua_CheckTagsValues() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_checktagsvalues(lua_State *L)
+{
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_CheckTagsValues(L, cfile, &programlog, &alertlog);
+}
+
+/**
+* Function calling lua_Rename() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_rename(lua_State *L)
+{
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_Rename(L, cfile, &programlog, &alertlog);
+}
+
+/**
+* Function calling lua_Move() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_move(lua_State *L)
+{
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_Move(L, cfile, &programlog, &alertlog);
+}
+
+/**
+* Function calling lua_Delete() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_delete(lua_State *L)
+{
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_Delete(L, cfile, &programlog, &alertlog);
+}
 
 
 

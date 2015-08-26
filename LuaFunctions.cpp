@@ -15,12 +15,12 @@
  *
  * @return Number of output arguments (for lua_register)
  */
-int lua_IsAudioFile(lua_State *L, MediaLibCleaner::File* audiofile) {
+int lua_IsAudioFile(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L);
 	if (n > 1)
 	{
 		lua_pushboolean(L, false);
-		std::wcerr << "[LUAPROC] _IsAudioFile(): function expects 0 arguments (" << std::to_wstring(n) << " given)." << std::endl;
+		(*lp)->Log(L"lua_IsAudioFile(" + audiofile->GetPath() + L")", L"Function expects 0 arguments (" + std::to_wstring(n) + L" given)", 2);
 		return 1;
 	}
 
@@ -35,12 +35,12 @@ int lua_IsAudioFile(lua_State *L, MediaLibCleaner::File* audiofile) {
  * @param[in]		L			lua_State object to config file
  * @param[in,out]   audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
  */
-int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile) {
+int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n % 2 == 1 && n > 0) { // requiers even, positive amount of arguments
 		lua_pushboolean(L, false);
-		std::wcerr << "[LUAPROC] _SetTags(): function expects even and positive amount of argument pairs [tag, value] (" << std::to_wstring(n) << " given)." << std::endl;
+		(*lp)->Log(L"lua_SetTags(" + audiofile->GetPath() + L")", L"Function expects even and positive amount of argument pairs [tag, value] (" + std::to_wstring(n) + L" given)", 2);
 		return 1;
 	}
 
@@ -62,7 +62,7 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 * @param[in]		L			lua_State object to config file
 * @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
 */
-int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile) {
+int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L) - 1; // argc for function
 	// input parameters are simple tag names, like this: "artist"
 	// note lack of % signs at the beginning and end
@@ -86,12 +86,12 @@ int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile) {
 * @param[in]		L			lua_State object to config file
 * @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
 */
-int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile) {
+int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n % 2 == 1 && n > 0) { // requiers even, positive amount of arguments
 		lua_pushboolean(L, false);
-		std::wcerr << "[LUAPROC] _CheckTagsValues(): function expects even and positive amount of argument pairs [tag, value] (" << std::to_wstring(n) << " given)." << std::endl;
+		(*lp)->Log(L"lua_CheckTagsValues(" + audiofile->GetPath() + L")", L"Function expects even and positive amount of argument pairs [tag, value] (" + std::to_wstring(n) + L" given)", 2);
 		return 1;
 	}
 
@@ -110,14 +110,14 @@ int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile) {
 * @param[in]		L			lua_State object to config file
 * @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
 */
-int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile)
+int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
 	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n != 1) // requires exactly 1 argument
 	{
 		lua_pushboolean(L, false);
-		std::wcerr << "[LUAPROC] _Rename(): function expects exactly 1 argument (" << std::to_wstring(n) << " given)." << std::endl;
+		(*lp)->Log(L"lua_Rename(" + audiofile->GetPath() + L")", L"Function expects exactly 1 argument (" + std::to_wstring(n) + L" given)", 2);
 	}
 
 	std::wstring nname = s2ws(lua_tostring(L, 1));
@@ -132,14 +132,14 @@ int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile)
 * @param[in]		L			lua_State object to config file
 * @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
 */
-int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile)
+int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
 	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n != 1) // requires exactly 1 argument
 	{
 		lua_pushboolean(L, false);
-		std::wcerr << "[LUAPROC] _Move(): function expects exactly 1 argument (" << std::to_wstring(n) << " given)." << std::endl;
+		(*lp)->Log(L"lua_Move(" + audiofile->GetPath() + L")", L"Function expects exactly 1 argument (" + std::to_wstring(n) + L" given)", 2);
 	}
 
 	std::wstring nloc = s2ws(lua_tostring(L, 1));
@@ -154,14 +154,14 @@ int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile)
 * @param[in]		L			lua_State object to config file
 * @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
 */
-int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile)
+int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
 	int n = lua_gettop(L) - 1; // argc for function
 
 	if (n > 0) //does not expect arguments
 	{
 		lua_pushboolean(L, false);
-		std::wcerr << "[LUAPROC] _Delete(): function expects exactly 0 arguments (" << std::to_wstring(n) << " given)." << std::endl;
+		(*lp)->Log(L"lua_Delete(" + audiofile->GetPath() + L")", L"Function expects exactly 0 arguments (" + std::to_wstring(n) + L" given)", 2);
 	}
 
 	lua_pushboolean(L, audiofile->Delete());

@@ -2087,7 +2087,7 @@ MediaLibCleaner::DFC::DFC(std::wstring path, std::unique_ptr<MediaLibCleaner::Lo
 	this->logalert = logalert;
 	this->logprogram = logprogram;
 
-	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Created object for: " + path, 3);
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC", L"Created object for: " + this->path, 3);
 }
 
 /**
@@ -2122,7 +2122,7 @@ std::wstring MediaLibCleaner::DFC::GetPath() {
  * Using method instead of operator overloading because operator overloading created unwanted results.
  */
 void MediaLibCleaner::DFC::IncCount() {
-	(*this->logprogram)->Log(L"MediaLibCleaner::DFC::IncCount", L"Incrementing DFC count", 3);
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC::IncCount", L"Incrementing DFC count for " + this->path, 3);
 	this->count++;
 }
 
@@ -2332,15 +2332,20 @@ MediaLibCleaner::DFC* MediaLibCleaner::AddDFC(std::list<MediaLibCleaner::DFC*>* 
 {
 	synch->lock();
 
+	(*lp)->Log(L"AddDFC(" + pth.generic_wstring() + L")", L"Creating and/or returning DFC", 3);
+
 	auto end = dfc_list->end();
 	for (auto it = dfc_list->begin(); it != end; ++it)
 	{
 		if ((*it)->GetPath() == pth) {
 			synch->unlock();
+			(*lp)->Log(L"AddDFC(" + pth.generic_wstring() + L")", L"Returning existing DFC", 3);
 			return (*it);
 		}
 	}
 	
+	(*lp)->Log(L"AddDFC(" + pth.generic_wstring() + L")", L"Creating new DFC", 3);
+
 	DFC* newdfc = new DFC(pth.generic_wstring(), lp, la);
 	dfc_list->push_back(newdfc);
 

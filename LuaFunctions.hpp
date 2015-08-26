@@ -11,12 +11,12 @@
 
 #include "MediaLibCleaner.hpp"
 
-int lua_IsAudioFile(lua_State *, MediaLibCleaner::File*);
-int lua_SetTags(lua_State *, MediaLibCleaner::File*);
-int lua_SetRequiredTags(lua_State *, MediaLibCleaner::File*);
-int lua_CheckTagsValues(lua_State *, MediaLibCleaner::File*);
-int lua_Rename(lua_State *, MediaLibCleaner::File*);
-int lua_Move(lua_State *, MediaLibCleaner::File*);
-int lua_Delete(lua_State *, MediaLibCleaner::File*);
+int lua_IsAudioFile(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_SetTags(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_SetRequiredTags(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_CheckTagsValues(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_Rename(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_Move(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_Delete(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 
 void lua_ErrorReporting(lua_State *, int, std::unique_ptr<MediaLibCleaner::LogProgram>*);
