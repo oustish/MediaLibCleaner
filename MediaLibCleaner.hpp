@@ -99,6 +99,11 @@ namespace MediaLibCleaner
 		* std::mutex protecting all Log write operations from racing conditions
 		*/
 		std::mutex synch;
+
+		/**
+		 * Contains information if object was initialized with proper path value
+		 */
+		bool initCompleted = false;
 	};
 
 	/**
@@ -133,6 +138,11 @@ namespace MediaLibCleaner
 		* std::mutex protecting all Log write operations from racing conditions
 		*/
 		std::mutex synch;
+
+		/**
+		* Contains information if object was initialized with proper path value
+		*/
+		bool initCompleted = false;
 	};
 
 	/**

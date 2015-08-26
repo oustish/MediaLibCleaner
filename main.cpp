@@ -25,7 +25,11 @@ std::string path = "",
 /**
  * Global variable containing int coded level indicating what kind of messages will be written to error log
  */
-int error_level = 0;
+int error_level = 0,
+/**
+ * Global variable containing user defined max. amount of threads to be used in process() and scan() functions; 0 - unlimited
+ */
+	max_threads = 0;
 
 /**
  * Global variable representing MediaLibCleaner::FilesAggregator object
@@ -280,13 +284,15 @@ int main(int argc, char *argv[]) {
 	// read values to stack
 	// as this is stack - read it in reverse
 	// so returned values will be in order
+	lua_getglobal(L, "_max_threads"); // -5
 	lua_getglobal(L, "_error_level"); // -4
 	lua_getglobal(L, "_error_log"); // -3
 	lua_getglobal(L, "_alert_log"); // -2
 	lua_getglobal(L, "_path"); // -1
 
 	// check if returning values have proper type
-	if (!lua_isstring(L, -1) || !lua_isstring(L, -2) || !lua_isstring(L, -3) || !lua_isnumber(L, -4)) {
+	if (!lua_isstring(L, -1) || !lua_isstring(L, -2) || !lua_isstring(L, -3) || !lua_isnumber(L, -4) || !lua_isnumber(L, -5)) {
+		std::wcerr << L"One or more of startup LUA parameters is incorrect. Exiting..." << std::endl;
 		return 2; // return error code here, so entire program will end; it's desired; debug
 	}
 
@@ -295,18 +301,22 @@ int main(int argc, char *argv[]) {
 	alert_log = lua_tostring(L, -2);
 	error_log = lua_tostring(L, -3);
 	error_level = static_cast<int>(lua_tonumber(L, -4));
+	max_threads = static_cast<int>(lua_tonumber(L, -5));
 
-	if (error_log != "-") {
-		std::unique_ptr<MediaLibCleaner::LogProgram> temp(new MediaLibCleaner::LogProgram(s2ws(error_log), error_level));
-		programlog.swap(temp);
-	}
+	std::unique_ptr<MediaLibCleaner::LogProgram> temp(new MediaLibCleaner::LogProgram(s2ws(error_log), error_level));
+	programlog.swap(temp);
 
-	if (alert_log != "-") {
-		std::unique_ptr<MediaLibCleaner::LogAlert> temp(new MediaLibCleaner::LogAlert(s2ws(alert_log)));
-		alertlog.swap(temp);
-	}
+	std::unique_ptr<MediaLibCleaner::LogAlert> temp2(new MediaLibCleaner::LogAlert(s2ws(alert_log)));
+	alertlog.swap(temp2);
 
 	lua_close(L);
+
+	// log all input LUA parameters
+	programlog->Log(L"Main", L"_path value: " + s2ws(path), 3);
+	programlog->Log(L"Main", L"_alert_log value: " + s2ws(alert_log), 3);
+	programlog->Log(L"Main", L"_error_log value: " + s2ws(error_log), 3);
+	programlog->Log(L"Main", L"_error_level value: " + std::to_wstring(error_level), 3);
+	programlog->Log(L"Main", L"_max_threads value: " + std::to_wstring(max_threads) , 3);
 
 	// BELOW ARE PROCEDURES TO SCAN GIVEN DIRECTORY AND RETRIEVE ALL INFO WE REQUIRE
 	// create MediaLibCleaner::FilesAggregator object nad swap it with global variable one
@@ -491,11 +501,11 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 
 
 	// SYSTEM DATA
-	//replaceAll(_newc, L"%_counter_dir%", audiofile->GetComment());
+	//replaceAll(newc, L"%_counter_dir%", L"0");
 	replaceAll(newc, L"%_counter_total%", std::to_wstring(total_files));
 	replaceAll(newc, L"%_date%", get_date_iso_8601_wide(datetime_raw));
 	replaceAll(newc, L"%_datetime%", get_date_rfc_2822_wide(datetime_raw));
-	replaceAll(newc, L"%_datetime_raw%", std::to_wstring(time(nullptr)));
+	replaceAll(newc, L"%_datetime_raw%", std::to_wstring(datetime_raw));
 	replaceAll(newc, L"%_total_files%", std::to_wstring(total_files));
 	replaceAll(newc, L"%_total_files_dir%", std::to_wstring(audiofile->GetDFC()->GetCounter()));
 
@@ -525,6 +535,9 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 	MediaLibCleaner::File* cfile;
 
 	(*fA)->rewind();
+
+	if (max_threads > 0)
+		omp_set_num_threads(max_threads);
 
 	#pragma omp parallel shared(lp, fA, wconfig) private(new_config, L, nc, s, cfile, id, wid)
 	{
@@ -612,6 +625,9 @@ void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregat
 	std::wstring wid;
 
 	pathl->rewind();
+
+	if (max_threads > 0)
+		omp_set_num_threads(max_threads);
 
 	#pragma omp parallel shared(dfcl_mutex, pathl, lp, la, pth, fA, tf, dfcl) private(currdfc, currpath, dirpath, id, wid)
 	{
