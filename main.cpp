@@ -592,6 +592,7 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 
 			lua_close(L);
 
+			cfile->save();
 			cfile = (*fA)->next();
 		} while (cfile != nullptr);
 

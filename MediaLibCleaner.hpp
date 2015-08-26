@@ -34,6 +34,7 @@
 #include <taglib/textidentificationframe.h>
 #include <taglib/unsynchronizedlyricsframe.h>
 #include <taglib/urllinkframe.h>
+#include <taglib/commentsframe.h>
 
 // Xiph headers
 #include <taglib/xiphcomment.h>
@@ -45,6 +46,7 @@
 #include <taglib/mp4tag.h>
 #include <taglib/mp4item.h>
 #include <taglib/mp4coverart.h>
+#include <taglib/mp4properties.h>>
 
 // APE headers
 #include <taglib/apetag.h>
@@ -514,6 +516,8 @@ namespace MediaLibCleaner
 
 		bool IsInitiated();
 		DFC* GetDFC();
+
+		void save();
 	};
 
 	/**

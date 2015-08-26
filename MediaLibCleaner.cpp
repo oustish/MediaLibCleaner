@@ -411,7 +411,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
  * Deconstructor for MediaLibCleaner::File class.
  */
 MediaLibCleaner::File::~File() {
-	(*this->logprogram)->Log(L"MediaLibCleaner::File", L"Calling destructor: " + this->d_path, 3);
+	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + this->d_path + L")", L"Calling destructor", 3);
 }
 
 
@@ -657,44 +657,71 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 {
 	if (this->isInitiated)
 	{
+		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting tag to new value", 3);
 		// change value in file
 		if (this->d_ext == L"mp3")
 		{
-			if (this->taglib_file_mp3->hasID3v2Tag())
+			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"MP3 file detected", 3);
+			if ((!this->taglib_file_mp3->hasID3v2Tag() && !this->taglib_file_mp3->hasAPETag()) || this->taglib_file_mp3->hasID3v2Tag())
 			{
 				TagLib::ID3v2::Tag *tag = this->taglib_file_mp3->ID3v2Tag(true);
 				TagLib::ByteVector handle = id3tag.c_str();
 
 				if (value == TagLib::String::null)
 				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing ID3v2 tag '" + s2ws(id3tag), 3);
 					tag->removeFrames(handle);
 				}
 				else
 				{
-					if (value.length() > 1 && value.substr(0, 1) == "T")
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting ID3v2 tag '" + s2ws(id3tag) + L"' to new value: '" + value.toWString() + L"'", 3);
+					if (id3tag.length() > 1 && id3tag.substr(0, 1) == "C")
 					{
+						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting comment type frame", 3);
 						if (!tag->frameList(handle).isEmpty())
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
 							tag->frameList(handle).front()->setText(value);
 						}
 						else
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
+							TagLib::ID3v2::CommentsFrame *frame = new TagLib::ID3v2::CommentsFrame(TagLib::String::UTF8);
+							frame->setText(value);
+							frame->setLanguage("eng");
+							tag->addFrame(frame);
+						}
+					}
+					else if (id3tag.length() > 1 && id3tag.substr(0,1) == "T")
+					{
+						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting text type frame", 3);
+						if (!tag->frameList(handle).isEmpty())
+						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
+							tag->frameList(handle).front()->setText(value);
+						}
+						else
+						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
 							TagLib::ID3v2::TextIdentificationFrame *frame =
 								new TagLib::ID3v2::TextIdentificationFrame(handle, TagLib::String::UTF8);
 							tag->addFrame(frame);
 							frame->setText(value);
 						}
 					}
-					else if (value.length() > 1 && value.substr(0, 1) == "W")
+					else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "W")
 					{
-						if (value == "WXXX[WWW]")
+						if (id3tag == "WXXX[WWW]")
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting URL user frame (WWW)", 3);
 							if (!tag->frameList(handle).isEmpty())
 							{
+								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
 								tag->frameList(handle).front()->setText(value);
 							}
 							else
 							{
+								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
 								TagLib::ID3v2::UserUrlLinkFrame *frame = new TagLib::ID3v2::UserUrlLinkFrame(TagLib::String::UTF8);
 								frame->setDescription("WWW");
 								frame->setText(value);
@@ -704,14 +731,17 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 						else
 							return false;
 					}
-					else if (value.length() >= 4 && value.substr(0, 4) == "USLT")
+					else if (id3tag.length() >= 4 && id3tag.substr(0, 4) == "USLT")
 					{
+						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting lyrics frame", 3);
 						if (!tag->frameList(handle).isEmpty())
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
 							tag->frameList(handle).front()->setText(value);
 						}
 						else
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
 							TagLib::ID3v2::UnsynchronizedLyricsFrame *frame = new TagLib::ID3v2::UnsynchronizedLyricsFrame(TagLib::String::UTF8);
 							frame->setText(value);
 							frame->setDescription("en");
@@ -722,8 +752,6 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 					else
 						return false;
 				}
-
-				this->taglib_file_mp3->save();
 			}
 
 			if (this->taglib_file_mp3->hasAPETag())
@@ -733,19 +761,21 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 
 				if (value == TagLib::String::null)
 				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing APE tag '" + s2ws(apetag) + L"'", 3);
 					tag->removeItem(handle);
 				}
 				else
 				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting APE tag '" + s2ws(apetag) + L"' to new value: '" + value.toWString() + L"'", 3);
 					TagLib::APE::Item *item = new TagLib::APE::Item(handle, value);
 					tag->setItem(handle, *item);
 				}
-
-				this->taglib_file_mp3->save();
 			}
 		}
 		else if (this->d_ext == L"ogg")
 		{
+			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"OGG file detected", 3);
+
 			TagLib::Ogg::XiphComment *tag = this->taglib_file_ogg->tag();
 			std::string handle = xiphtag;
 			if (value == TagLib::String::null)
@@ -756,45 +786,70 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 			{
 				tag->addField(handle, value, true);
 			}
-			this->taglib_file_ogg->save();
 		}
 		else if (this->d_ext == L"flac")
 		{
-			if (this->taglib_file_flac->hasID3v2Tag())
+			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"FLAC file detected", 3);
+			if ((!this->taglib_file_flac->hasID3v2Tag() && !this->taglib_file_flac->hasXiphComment()) || this->taglib_file_flac->hasID3v2Tag())
 			{
 				TagLib::ID3v2::Tag *tag = this->taglib_file_flac->ID3v2Tag(true);
 				TagLib::ByteVector handle = id3tag.c_str();
 
 				if (value == TagLib::String::null)
 				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing ID3v2 tag '" + s2ws(id3tag), 3);
 					tag->removeFrames(handle);
 				}
 				else
 				{
-					if (value.length() > 1 && value.substr(0, 1) == "T")
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting ID3v2 tag '" + s2ws(id3tag) + L"' to new value: '" + value.toWString() + L"'", 3);
+					if (id3tag.length() > 1 && id3tag.substr(0, 1) == "C")
 					{
+						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting comment type frame", 3);
 						if (!tag->frameList(handle).isEmpty())
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
 							tag->frameList(handle).front()->setText(value);
 						}
 						else
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
+							TagLib::ID3v2::CommentsFrame *frame = new TagLib::ID3v2::CommentsFrame(TagLib::String::UTF8);
+							frame->setText(value);
+							frame->setLanguage("eng");
+							tag->addFrame(frame);
+						}
+					}
+					else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "T")
+					{
+						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting text type frame", 3);
+						if (!tag->frameList(handle).isEmpty())
+						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
+							tag->frameList(handle).front()->setText(value);
+						}
+						else
+						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
 							TagLib::ID3v2::TextIdentificationFrame *frame =
 								new TagLib::ID3v2::TextIdentificationFrame(handle, TagLib::String::UTF8);
 							tag->addFrame(frame);
 							frame->setText(value);
 						}
 					}
-					else if (value.length() > 1 && value.substr(0, 1) == "W")
+					else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "W")
 					{
-						if (value == "WXXX[WWW]")
+						if (id3tag == "WXXX[WWW]")
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting URL user frame (WWW)", 3);
 							if (!tag->frameList(handle).isEmpty())
 							{
+								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
 								tag->frameList(handle).front()->setText(value);
 							}
 							else
 							{
+								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
 								TagLib::ID3v2::UserUrlLinkFrame *frame = new TagLib::ID3v2::UserUrlLinkFrame(TagLib::String::UTF8);
 								frame->setDescription("WWW");
 								frame->setText(value);
@@ -804,14 +859,17 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 						else
 							return false;
 					}
-					else if (value.length() >= 4 && value.substr(0, 4) == "USLT")
+					else if (id3tag.length() >= 4 && id3tag.substr(0, 4) == "USLT")
 					{
+						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting lyrics frame", 3);
 						if (!tag->frameList(handle).isEmpty())
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
 							tag->frameList(handle).front()->setText(value);
 						}
 						else
 						{
+							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
 							TagLib::ID3v2::UnsynchronizedLyricsFrame *frame = new TagLib::ID3v2::UnsynchronizedLyricsFrame(TagLib::String::UTF8);
 							frame->setText(value);
 							frame->setDescription("en");
@@ -830,21 +888,22 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 				std::string handle = xiphtag;
 				if (value == TagLib::String::null)
 				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing Xiph tag '" + s2ws(xiphtag), 3);
 					tag->removeField(handle);
 				}
 				else
 				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting Xiph tag '" + s2ws(xiphtag) + L"' to new value: '" + value.toWString() + L"'", 3);
 					tag->addField(handle, value, true);
 				}
 			}
-
-			this->taglib_file_flac->save();
 		}
 		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
 		{
+			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"M4A/MP4 file detected", 3);
+
 			std::string handle = mp4tag;
 			TagLib::MP4::Tag *tag = this->taglib_file_m4a->tag();
-			TagLib::MP4::ItemListMap items = tag->itemListMap();
 
 			TagLib::StringList *values = new TagLib::StringList(value);
 			TagLib::MP4::Item *newitem = new TagLib::MP4::Item(values);
@@ -853,24 +912,12 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 
 			if (value == TagLib::String::null)
 			{
-				if (items.contains(handle))
-				{
-					items[handle] = emptyitem;
-				}
+				
 			}
 			else
 			{
-				if (items.contains(handle))
-				{
-					items[handle] = newitem;
-				}
-				else
-				{
-					items.insert(handle, newitem);
-				}
+				
 			}
-
-			tag->save();
 		}
 		return true;
 	}
@@ -897,27 +944,7 @@ bool MediaLibCleaner::File::SetArtist(TagLib::String value)
 		this->artist = value;
 
 		// change value in file
-		if (this->d_ext == L"mp3")
-		{
-			this->taglib_file_mp3->tag()->setArtist(value);
-			this->taglib_file_mp3->save();
-		}
-		else if (this->d_ext == L"ogg")
-		{
-			this->taglib_file_ogg->tag()->setArtist(value);
-			this->taglib_file_ogg->save();
-		}
-		else if (this->d_ext == L"flac")
-		{
-			this->taglib_file_flac->tag()->setArtist(value);
-			this->taglib_file_flac->save();
-		}
-		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
-		{
-			this->taglib_file_m4a->tag()->setArtist(value);
-			this->taglib_file_m4a->save();
-		}
-		return true;
+		return this->setTagUniversal("TPE1", "ARTIST", "ARTIST", "©ART", value);
 	}
 	return false;
 }
@@ -936,27 +963,7 @@ bool MediaLibCleaner::File::SetTitle(TagLib::String value) {
 		this->title = value;
 
 		// change value in file
-		if (this->d_ext == L"mp3")
-		{
-			this->taglib_file_mp3->tag()->setTitle(value);
-			this->taglib_file_mp3->save();
-		}
-		else if (this->d_ext == L"ogg")
-		{
-			this->taglib_file_ogg->tag()->setTitle(value);
-			this->taglib_file_ogg->save();
-		}
-		else if (this->d_ext == L"flac")
-		{
-			this->taglib_file_flac->tag()->setTitle(value);
-			this->taglib_file_flac->save();
-		}
-		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
-		{
-			this->taglib_file_m4a->tag()->setTitle(value);
-			this->taglib_file_m4a->save();
-		}
-		return true;
+		return this->setTagUniversal("TIT2", "TITLE", "TITLE", ws2s(L"\xa9nam"), value);
 	}
 	return false;
 }
@@ -975,27 +982,7 @@ bool MediaLibCleaner::File::SetAlbum(TagLib::String value) {
 		this->album = value;
 
 		// change value in file
-		if (this->d_ext == L"mp3")
-		{
-			this->taglib_file_mp3->tag()->setAlbum(value);
-			this->taglib_file_mp3->save();
-		}
-		else if (this->d_ext == L"ogg")
-		{
-			this->taglib_file_ogg->tag()->setAlbum(value);
-			this->taglib_file_ogg->save();
-		}
-		else if (this->d_ext == L"flac")
-		{
-			this->taglib_file_flac->tag()->setAlbum(value);
-			this->taglib_file_flac->save();
-		}
-		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
-		{
-			this->taglib_file_m4a->tag()->setAlbum(value);
-			this->taglib_file_m4a->save();
-		}
-		return true;
+		return this->setTagUniversal("TALB", "ALBUM", "ALBUM", ws2s(L"\xa9alb"), value);
 	}
 	return false;
 }
@@ -1014,27 +1001,7 @@ bool MediaLibCleaner::File::SetGenre(TagLib::String value) {
 		this->genre = value;
 
 		// change value in file
-		if (this->d_ext == L"mp3")
-		{
-			this->taglib_file_mp3->tag()->setGenre(value);
-			this->taglib_file_mp3->save();
-		}
-		else if (this->d_ext == L"ogg")
-		{
-			this->taglib_file_ogg->tag()->setGenre(value);
-			this->taglib_file_ogg->save();
-		}
-		else if (this->d_ext == L"flac")
-		{
-			this->taglib_file_flac->tag()->setGenre(value);
-			this->taglib_file_flac->save();
-		}
-		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
-		{
-			this->taglib_file_m4a->tag()->setGenre(value);
-			this->taglib_file_m4a->save();
-		}
-		return true;
+		return this->setTagUniversal("TCON", "GENRE", "GENRE", ws2s(L"\xa9gen"), value);
 	}
 	return false;
 }
@@ -1053,27 +1020,7 @@ bool MediaLibCleaner::File::SetComment(TagLib::String value) {
 		this->comment = value;
 
 		// change value in file
-		if (this->d_ext == L"mp3")
-		{
-			this->taglib_file_mp3->tag()->setComment(value);
-			this->taglib_file_mp3->save();
-		}
-		else if (this->d_ext == L"ogg")
-		{
-			this->taglib_file_ogg->tag()->setComment(value);
-			this->taglib_file_ogg->save();
-		}
-		else if (this->d_ext == L"flac")
-		{
-			this->taglib_file_flac->tag()->setComment(value);
-			this->taglib_file_flac->save();
-		}
-		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
-		{
-			this->taglib_file_m4a->tag()->setComment(value);
-			this->taglib_file_m4a->save();
-		}
-		return true;
+		return this->setTagUniversal("COMM", "COMMENT", "COMMENT", ws2s(L"\xa9cmt"), value);
 	}
 	return false;
 }
@@ -1092,27 +1039,7 @@ bool MediaLibCleaner::File::SetTrack(TagLib::uint value) {
 		this->track = value;
 
 		// change value in file
-		if (this->d_ext == L"mp3")
-		{
-			this->taglib_file_mp3->tag()->setTrack(value);
-			this->taglib_file_mp3->save();
-		}
-		else if (this->d_ext == L"ogg")
-		{
-			this->taglib_file_ogg->tag()->setTrack(value);
-			this->taglib_file_ogg->save();
-		}
-		else if (this->d_ext == L"flac")
-		{
-			this->taglib_file_flac->tag()->setTrack(value);
-			this->taglib_file_flac->save();
-		}
-		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
-		{
-			this->taglib_file_m4a->tag()->setTrack(value);
-			this->taglib_file_m4a->save();
-		}
-		return true;
+		return this->setTagUniversal("TRCK", "TRACKNUMBER", "TRACK", "trkn", std::to_wstring(value));
 	}
 	return false;
 }
@@ -1131,27 +1058,7 @@ bool MediaLibCleaner::File::SetYear(TagLib::uint value) {
 		this->year = value;
 
 		// change value in file
-		if (this->d_ext == L"mp3")
-		{
-			this->taglib_file_mp3->tag()->setYear(value);
-			this->taglib_file_mp3->save();
-		}
-		else if (this->d_ext == L"ogg")
-		{
-			this->taglib_file_ogg->tag()->setYear(value);
-			this->taglib_file_ogg->save();
-		}
-		else if (this->d_ext == L"flac")
-		{
-			this->taglib_file_flac->tag()->setYear(value);
-			this->taglib_file_flac->save();
-		}
-		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
-		{
-			this->taglib_file_m4a->tag()->setYear(value);
-			this->taglib_file_m4a->save();
-		}
-		return true;
+		return this->setTagUniversal("TYER", "YEAR", "YEAR", ws2s(L"\xa9day"), std::to_wstring(value));
 	}
 	return false;
 }
@@ -1165,8 +1072,12 @@ bool MediaLibCleaner::File::SetYear(TagLib::uint value) {
 */
 bool MediaLibCleaner::File::SetAlbumArtist(TagLib::String value)
 {
-	this->albumartist = value;
-	return this->setTagUniversal("TPE2", "ALBUMARTIST", "ALBUMARTIST", "aART", value);
+	if (this->isInitiated)
+	{
+		this->albumartist = value;
+		return this->setTagUniversal("TPE2", "ALBUMARTIST", "ALBUMARTIST", "aART", value);
+	}
+	return false;
 }
 
 /**
@@ -1177,8 +1088,12 @@ bool MediaLibCleaner::File::SetAlbumArtist(TagLib::String value)
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetBPM(TagLib::String value) {
-	this->bpm = value;
-	return this->setTagUniversal("TBPM", "BPM", "BPM", "tmpo", value);
+	if (this->isInitiated)
+	{
+		this->bpm = value;
+		return this->setTagUniversal("TBPM", "BPM", "BPM", "tmpo", value);
+	}
+	return false;
 }
 
 /**
@@ -1189,8 +1104,12 @@ bool MediaLibCleaner::File::SetBPM(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetCopyright(TagLib::String value) {
-	this->copyright = value;
-	return this->setTagUniversal("TCOP", "COPYRIGHT", "COPYRIGHT", "cprt", value);
+	if (this->isInitiated)
+	{
+		this->copyright = value;
+		return this->setTagUniversal("TCOP", "COPYRIGHT", "COPYRIGHT", "cprt", value);
+	}
+	return false;
 }
 
 /**
@@ -1201,8 +1120,12 @@ bool MediaLibCleaner::File::SetCopyright(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetLanguage(TagLib::String value) {
-	this->language = value;
-	return this->setTagUniversal("TLAN", "LANGUAGE", "LANGUAGE", "----:com.apple.iTunes:LANGUAGE", value);
+	if (this->isInitiated)
+	{
+		this->language = value;
+		return this->setTagUniversal("TLAN", "LANGUAGE", "LANGUAGE", "----:com.apple.iTunes:LANGUAGE", value);
+	}
+	return false;
 }
 
 /**
@@ -1213,8 +1136,12 @@ bool MediaLibCleaner::File::SetLanguage(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetTagLength(TagLib::String value) {
-	this->length = value;
-	return this->setTagUniversal("TLEN", "LENGTH", "LENGTH", "----:com.apple.iTunes:LENGTH ", value);
+	if (this->isInitiated)
+	{
+		this->length = value;
+		return this->setTagUniversal("TLEN", "LENGTH", "LENGTH", "----:com.apple.iTunes:LENGTH ", value);
+	}
+	return false;
 }
 
 /**
@@ -1225,8 +1152,12 @@ bool MediaLibCleaner::File::SetTagLength(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetMood(TagLib::String value) {
-	this->mood = value;
-	return this->setTagUniversal("TMOO", "MOOD", "MOOD", "----:com.apple.iTunes:MOOD", value);
+	if (this->isInitiated)
+	{
+		this->mood = value;
+		return this->setTagUniversal("TMOO", "MOOD", "MOOD", "----:com.apple.iTunes:MOOD", value);
+	}
+	return false;
 }
 
 /**
@@ -1237,8 +1168,12 @@ bool MediaLibCleaner::File::SetMood(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetOrigAlbum(TagLib::String value) {
-	this->origalbum = value;
-	return this->setTagUniversal("TOAL", "ORIGALBUM", "ORIGALBUM", "----:com.apple.iTunes:ORIGALBUM", value);
+	if (this->isInitiated)
+	{
+		this->origalbum = value;
+		return this->setTagUniversal("TOAL", "ORIGALBUM", "ORIGALBUM", "----:com.apple.iTunes:ORIGALBUM", value);
+	}
+	return false;
 }
 
 /**
@@ -1249,8 +1184,12 @@ bool MediaLibCleaner::File::SetOrigAlbum(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetOrigArtist(TagLib::String value) {
-	this->origartist = value;
-	return this->setTagUniversal("TOPE", "ORIGARTIST", "ORIGARTIST", "----:com.apple.iTunes:ORIGARTIST", value);
+	if (this->isInitiated)
+	{
+		this->origartist = value;
+		return this->setTagUniversal("TOPE", "ORIGARTIST", "ORIGARTIST", "----:com.apple.iTunes:ORIGARTIST", value);
+	}
+	return false;
 }
 
 /**
@@ -1261,8 +1200,12 @@ bool MediaLibCleaner::File::SetOrigArtist(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetOrigFilename(TagLib::String value) {
-	this->origfilename = value;
-	return this->setTagUniversal("TOFN", "ORIGFILENAME", "ORIGFILENAME", "----:com.apple.iTunes:ORIGFILENAME", value);
+	if (this->isInitiated)
+	{
+		this->origfilename = value;
+		return this->setTagUniversal("TOFN", "ORIGFILENAME", "ORIGFILENAME", "----:com.apple.iTunes:ORIGFILENAME", value);
+	}
+	return false;
 }
 
 /**
@@ -1273,8 +1216,12 @@ bool MediaLibCleaner::File::SetOrigFilename(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetOrigYear(TagLib::String value) {
-	this->origyear = value;
-	return this->setTagUniversal("TDOR", "ORIGYEAR", "ORIGYEAR", "----:com.apple.iTunes:ORIGYEAR", value);
+	if (this->isInitiated)
+	{
+		this->origyear = value;
+		return this->setTagUniversal("TDOR", "ORIGYEAR", "ORIGYEAR", "----:com.apple.iTunes:ORIGYEAR", value);
+	}
+	return false;
 }
 
 /**
@@ -1285,8 +1232,12 @@ bool MediaLibCleaner::File::SetOrigYear(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetPublisher(TagLib::String value) {
-	this->publisher = value;
-	return this->setTagUniversal("TPUB", "ORGANIZATION", "PUBLISHER", "----:com.apple.iTunes:PUBLISHER ", value);
+	if (this->isInitiated)
+	{
+		this->publisher = value;
+		return this->setTagUniversal("TPUB", "ORGANIZATION", "PUBLISHER", "----:com.apple.iTunes:PUBLISHER ", value);
+	}
+	return false;
 }
 
 /**
@@ -1297,8 +1248,12 @@ bool MediaLibCleaner::File::SetPublisher(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetLyricsUnsynced(TagLib::String value) {
-	this->unsyncedlyrics = value;
-	return this->setTagUniversal("USLT", "UNSYNCEDLYRICS", "UNSYNCEDLYRICS", "©lyr", value);
+	if (this->isInitiated)
+	{
+		this->unsyncedlyrics = value;
+		return this->setTagUniversal("USLT", "UNSYNCEDLYRICS", "UNSYNCEDLYRICS", ws2s(L"\xa9lyr"), value);
+	}
+	return false;
 }
 
 /**
@@ -1309,8 +1264,12 @@ bool MediaLibCleaner::File::SetLyricsUnsynced(TagLib::String value) {
 * @return Information if setting tag has completed successfully
 */
 bool MediaLibCleaner::File::SetWWW(TagLib::String value) {
-	this->www = value;
-	return this->setTagUniversal("WXXX[WWW]", "WWW", "WWW", "----:com.apple.iTunes:WWW", value);
+	if (this->isInitiated)
+	{
+		this->www = value;
+		return this->setTagUniversal("WXXX[WWW]", "WWW", "WWW", "----:com.apple.iTunes:WWW", value);
+	}
+	return false;
 }
 
 
@@ -1815,6 +1774,26 @@ MediaLibCleaner::DFC* MediaLibCleaner::File::GetDFC() {
 	return this->d_dfc;
 }
 
+/**
+ * Method executed by process() after processing LUA script to save changes made by user script to the file
+ */
+void MediaLibCleaner::File::save()
+{
+	if (this->isInitiated)
+	{
+		(*this->logprogram)->Log(L"MediaLibCleaner::save(" + this->d_path + L")", L"Writing all changes to file", 3);
+
+		if (this->d_ext == L"mp3")
+			this->taglib_file_mp3->save();
+		else if (this->d_ext == L"flac")
+			this->taglib_file_flac->save();
+		else if (this->d_ext == L"ogg")
+			this->taglib_file_ogg->save();
+		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
+			this->taglib_file_m4a->tag()->save();
+	}
+}
+
 
 
 
@@ -1843,7 +1822,7 @@ MediaLibCleaner::FilesAggregator::~FilesAggregator() {
 	(*this->logprogram)->Log(L"MediaLibCleaner::FilesAggregator", L"Calling destructor", 3);
 
 	auto nd = this->end();
-	for (auto it = this->begin(); it != nd; it++)
+	for (auto it = this->begin(); it != nd; ++it)
 		delete *it;
 }
 
@@ -2331,8 +2310,6 @@ MediaLibCleaner::DFC* MediaLibCleaner::AddDFC(std::list<MediaLibCleaner::DFC*>* 
 	std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
 	synch->lock();
-
-	(*lp)->Log(L"AddDFC(" + pth.generic_wstring() + L")", L"Creating and/or returning DFC", 3);
 
 	auto end = dfc_list->end();
 	for (auto it = dfc_list->begin(); it != end; ++it)

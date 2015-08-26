@@ -52,9 +52,18 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<
 
 	for (int i = 1; i <= n; i += 2) {
 		std::wstring tag = s2ws(lua_tostring(L, i));
-		std::wstring val = s2ws(lua_tostring(L, i+1));
-
-		audiofile->SetTag(tag, val);
+		TagLib::uint val_uint = 0;
+		TagLib::String val_str;
+		if (tag == L"track" || tag == L"year")
+		{
+			val_uint = static_cast<TagLib::uint>(lua_tonumber(L, i + 1));
+			audiofile->SetTag(tag, val_uint);
+		}
+		else
+		{
+			val_str = s2ws(lua_tostring(L, i + 1));
+			audiofile->SetTag(tag, val_str);
+		}
 	}
 
 	// return - indicates function completed it's run
