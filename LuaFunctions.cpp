@@ -10,8 +10,10 @@
 /**
  * Function processing given file and returning if it is an audio file
  *
- * @param[in] L				lua_State object to config file
- * @param[in] audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
+ * @param[in] L	         lua_State object to config file
+ * @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+ * @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+ * @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
  *
  * @return Number of output arguments (for lua_register)
  */
@@ -32,8 +34,12 @@ int lua_IsAudioFile(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_
 /**
  * Function to set tag(s) in given audio file
  *
- * @param[in]		L			lua_State object to config file
- * @param[in,out]   audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
+ * @param[in] L			 lua_State object to config file
+ * @param[in] audiofile	 std::unique_ptr to MediaLibCleaner::File object representing current file
+ * @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+ * @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+ *
+ * @return Number of output arguments (for lua_register)
  */
 int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L) - 1; // argc for function
@@ -59,8 +65,12 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<
 /**
 * Function to set required tag(s) in given audio file
 *
-* @param[in]		L			lua_State object to config file
-* @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] L          lua_State object to config file
+* @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+* @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+*
+* @return Number of output arguments (for lua_register)
 */
 int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L) - 1; // argc for function
@@ -83,8 +93,12 @@ int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile, std::uni
 /**
 * Function to set required tag(s) in given audio file, as well checks if it has desired values
 *
-* @param[in]		L			lua_State object to config file
-* @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] L          lua_State object to config file
+* @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+* @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+*
+* @return Number of output arguments (for lua_register)
 */
 int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L) - 1; // argc for function
@@ -107,8 +121,12 @@ int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile, std::uni
 /**
 * Function renames source file to the value specified by the user
 *
-* @param[in]		L			lua_State object to config file
-* @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] L          lua_State object to config file
+* @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+* @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+*
+* @return Number of output arguments (for lua_register)
 */
 int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
@@ -129,8 +147,12 @@ int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<M
 /**
 * Function moves source file to the value specified by the user
 *
-* @param[in]		L			lua_State object to config file
-* @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] L          lua_State object to config file
+* @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+* @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+*
+* @return Number of output arguments (for lua_register)
 */
 int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
@@ -151,8 +173,12 @@ int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<Med
 /**
 * Function deletes specified file
 *
-* @param[in]		L			lua_State object to config file
-* @param[in,out]    audiofile	std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] L          lua_State object to config file
+* @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+* @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+*
+* @return Number of output arguments (for lua_register)
 */
 int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
@@ -171,7 +197,7 @@ int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<M
 
 
 /**
- * Function redirecting lua errors to std::cerr stream
+ * Function redirecting lua errors to MediaLibCleaner::LogProgram as an error message
  *
  * @param[in] L			lua_State object to config file
  * @param[in] status	Integer containing lua processor status code
