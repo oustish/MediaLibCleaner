@@ -15,6 +15,8 @@ This file contains declarations of all helper functions
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/locale.hpp>
 
+#include <taglib/fileref.h>
+
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif

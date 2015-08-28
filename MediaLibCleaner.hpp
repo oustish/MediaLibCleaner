@@ -63,8 +63,10 @@
 #include <memory>
 
 #include "helpers.hpp"
+#include "base64.h"
 #include <mutex>
 #include <codecvt>
+
 
 /**
 * @namespace MediaLibCleaner
@@ -74,6 +76,18 @@
 
 namespace MediaLibCleaner
 {
+	/**
+	 * Enumerate type to distinct diffirent filetypes
+	 */
+	enum FileType
+	{
+		FILETYPE_MP3, ///< Type of the file is MP3
+		FILETYPE_OGG, ///< Type of the file is OGG Vorbis
+		FILETYPE_FLAC, ///< Type of the file is FLAC
+		FILETYPE_MP4, ///< Type of the file is MP4/M4a/AAC/AC3/...
+		FILETYPE_UNKNOWN ///< Type of the file is unknown (for example *.jpg, *.png, *.ini, ...)
+	};
+
 	/**
 	 * @class LogAlert MediaLibCleaner.hpp
 	 *
@@ -389,17 +403,25 @@ namespace MediaLibCleaner
 		std::unique_ptr<TagLib::FileRef> fileref;
 
 		/**
+		 * Enum type for filetype distinctness
+		 */
+		MediaLibCleaner::FileType filetype = FILETYPE_UNKNOWN;
+
+		/**
 		 * TagLib::MPEG::File object representing MP3 file (if file represented by given File object is in fact MP3 file)
 		 */
 		std::unique_ptr<TagLib::MPEG::File> taglib_file_mp3;
+
 		/**
 		* TagLib::Ogg::Vorbis::File object representing OGG Vorbis file (if file represented by given File object is in fact OGG Vorbis file)
 		*/
 		std::unique_ptr<TagLib::Ogg::Vorbis::File> taglib_file_ogg;
+
 		/**
 		* TagLib::MPEG::File object representing FLAC file (if file represented by given File object is in fact FLAC file)
 		*/
 		std::unique_ptr<TagLib::FLAC::File> taglib_file_flac;
+
 		/**
 		* TagLib::MPEG::File object representing M4A file (if file represented by given File object is in fact M4A file)
 		*/
@@ -409,6 +431,7 @@ namespace MediaLibCleaner
 		* std::unique_ptr to MediaLibCleaner::LogAlert object for logging purposes
 		*/
 		std::unique_ptr<LogAlert>* logalert;
+
 		/**
 		* std::unique_ptr to MediaLibCleaner::LogProgram object for logging purposes
 		*/
