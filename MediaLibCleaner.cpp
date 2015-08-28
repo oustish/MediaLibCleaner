@@ -658,118 +658,20 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 	if (this->isInitiated)
 	{
 		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting tag to new value", 3);
-		// change value in file
+
 		if (this->d_ext == L"mp3")
 		{
 			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"MP3 file detected", 3);
 			if ((!this->taglib_file_mp3->hasID3v2Tag() && !this->taglib_file_mp3->hasAPETag()) || this->taglib_file_mp3->hasID3v2Tag())
 			{
 				TagLib::ID3v2::Tag *tag = this->taglib_file_mp3->ID3v2Tag(true);
-				TagLib::ByteVector handle = id3tag.c_str();
-
-				if (value == TagLib::String::null)
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing ID3v2 tag '" + s2ws(id3tag), 3);
-					tag->removeFrames(handle);
-				}
-				else
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting ID3v2 tag '" + s2ws(id3tag) + L"' to new value: '" + value.toWString() + L"'", 3);
-					if (id3tag.length() > 1 && id3tag.substr(0, 1) == "C")
-					{
-						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting comment type frame", 3);
-						if (!tag->frameList(handle).isEmpty())
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-							tag->frameList(handle).front()->setText(value);
-						}
-						else
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-							TagLib::ID3v2::CommentsFrame *frame = new TagLib::ID3v2::CommentsFrame(TagLib::String::UTF8);
-							frame->setText(value);
-							frame->setLanguage("eng");
-							tag->addFrame(frame);
-						}
-					}
-					else if (id3tag.length() > 1 && id3tag.substr(0,1) == "T")
-					{
-						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting text type frame", 3);
-						if (!tag->frameList(handle).isEmpty())
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-							tag->frameList(handle).front()->setText(value);
-						}
-						else
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-							TagLib::ID3v2::TextIdentificationFrame *frame =
-								new TagLib::ID3v2::TextIdentificationFrame(handle, TagLib::String::UTF8);
-							tag->addFrame(frame);
-							frame->setText(value);
-						}
-					}
-					else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "W")
-					{
-						if (id3tag == "WXXX[WWW]")
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting URL user frame (WWW)", 3);
-							if (!tag->frameList(handle).isEmpty())
-							{
-								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-								tag->frameList(handle).front()->setText(value);
-							}
-							else
-							{
-								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-								TagLib::ID3v2::UserUrlLinkFrame *frame = new TagLib::ID3v2::UserUrlLinkFrame(TagLib::String::UTF8);
-								frame->setDescription("WWW");
-								frame->setText(value);
-								tag->addFrame(frame);
-							}
-						}
-						else
-							return false;
-					}
-					else if (id3tag.length() >= 4 && id3tag.substr(0, 4) == "USLT")
-					{
-						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting lyrics frame", 3);
-						if (!tag->frameList(handle).isEmpty())
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-							tag->frameList(handle).front()->setText(value);
-						}
-						else
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-							TagLib::ID3v2::UnsynchronizedLyricsFrame *frame = new TagLib::ID3v2::UnsynchronizedLyricsFrame(TagLib::String::UTF8);
-							frame->setText(value);
-							frame->setDescription("en");
-							frame->setLanguage("eng");
-							tag->addFrame(frame);
-						}
-					}
-					else
-						return false;
-				}
+				this->setID3v2Tag(value, id3tag, tag);
 			}
 
 			if (this->taglib_file_mp3->hasAPETag())
 			{
 				TagLib::APE::Tag *tag = this->taglib_file_mp3->APETag(true);
-				std::string handle = apetag;
-
-				if (value == TagLib::String::null)
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing APE tag '" + s2ws(apetag) + L"'", 3);
-					tag->removeItem(handle);
-				}
-				else
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting APE tag '" + s2ws(apetag) + L"' to new value: '" + value.toWString() + L"'", 3);
-					TagLib::APE::Item *item = new TagLib::APE::Item(handle, value);
-					tag->setItem(handle, *item);
-				}
+				this->setAPEv2Tag(value, apetag, tag);
 			}
 		}
 		else if (this->d_ext == L"ogg")
@@ -777,15 +679,7 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"OGG file detected", 3);
 
 			TagLib::Ogg::XiphComment *tag = this->taglib_file_ogg->tag();
-			std::string handle = xiphtag;
-			if (value == TagLib::String::null)
-			{
-				tag->removeField(handle);
-			}
-			else
-			{
-				tag->addField(handle, value, true);
-			}
+			this->setXiphTag(value, xiphtag, tag);
 		}
 		else if (this->d_ext == L"flac")
 		{
@@ -793,131 +687,22 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 			if ((!this->taglib_file_flac->hasID3v2Tag() && !this->taglib_file_flac->hasXiphComment()) || this->taglib_file_flac->hasID3v2Tag())
 			{
 				TagLib::ID3v2::Tag *tag = this->taglib_file_flac->ID3v2Tag(true);
-				TagLib::ByteVector handle = id3tag.c_str();
-
-				if (value == TagLib::String::null)
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing ID3v2 tag '" + s2ws(id3tag), 3);
-					tag->removeFrames(handle);
-				}
-				else
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting ID3v2 tag '" + s2ws(id3tag) + L"' to new value: '" + value.toWString() + L"'", 3);
-					if (id3tag.length() > 1 && id3tag.substr(0, 1) == "C")
-					{
-						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting comment type frame", 3);
-						if (!tag->frameList(handle).isEmpty())
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-							tag->frameList(handle).front()->setText(value);
-						}
-						else
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-							TagLib::ID3v2::CommentsFrame *frame = new TagLib::ID3v2::CommentsFrame(TagLib::String::UTF8);
-							frame->setText(value);
-							frame->setLanguage("eng");
-							tag->addFrame(frame);
-						}
-					}
-					else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "T")
-					{
-						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting text type frame", 3);
-						if (!tag->frameList(handle).isEmpty())
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-							tag->frameList(handle).front()->setText(value);
-						}
-						else
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-							TagLib::ID3v2::TextIdentificationFrame *frame =
-								new TagLib::ID3v2::TextIdentificationFrame(handle, TagLib::String::UTF8);
-							tag->addFrame(frame);
-							frame->setText(value);
-						}
-					}
-					else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "W")
-					{
-						if (id3tag == "WXXX[WWW]")
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting URL user frame (WWW)", 3);
-							if (!tag->frameList(handle).isEmpty())
-							{
-								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-								tag->frameList(handle).front()->setText(value);
-							}
-							else
-							{
-								(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-								TagLib::ID3v2::UserUrlLinkFrame *frame = new TagLib::ID3v2::UserUrlLinkFrame(TagLib::String::UTF8);
-								frame->setDescription("WWW");
-								frame->setText(value);
-								tag->addFrame(frame);
-							}
-						}
-						else
-							return false;
-					}
-					else if (id3tag.length() >= 4 && id3tag.substr(0, 4) == "USLT")
-					{
-						(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting lyrics frame", 3);
-						if (!tag->frameList(handle).isEmpty())
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
-							tag->frameList(handle).front()->setText(value);
-						}
-						else
-						{
-							(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
-							TagLib::ID3v2::UnsynchronizedLyricsFrame *frame = new TagLib::ID3v2::UnsynchronizedLyricsFrame(TagLib::String::UTF8);
-							frame->setText(value);
-							frame->setDescription("en");
-							frame->setLanguage("eng");
-							tag->addFrame(frame);
-						}
-					}
-					else
-						return false;
-				}
+				this->setID3v2Tag(value, id3tag, tag);
 			}
 
 			if (this->taglib_file_flac->hasXiphComment())
 			{
 				TagLib::Ogg::XiphComment *tag = this->taglib_file_flac->xiphComment(true);
-				std::string handle = xiphtag;
-				if (value == TagLib::String::null)
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing Xiph tag '" + s2ws(xiphtag), 3);
-					tag->removeField(handle);
-				}
-				else
-				{
-					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting Xiph tag '" + s2ws(xiphtag) + L"' to new value: '" + value.toWString() + L"'", 3);
-					tag->addField(handle, value, true);
-				}
+				this->setXiphTag(value, xiphtag, tag);
 			}
 		}
 		else if (this->d_ext == L"m4a" || this->d_ext == L"mp4")
 		{
 			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"M4A/MP4 file detected", 3);
 
-			std::string handle = mp4tag;
 			TagLib::MP4::Tag *tag = this->taglib_file_m4a->tag();
 
-			TagLib::StringList *values = new TagLib::StringList(value);
-			TagLib::MP4::Item *newitem = new TagLib::MP4::Item(values);
-
-			TagLib::MP4::Item *emptyitem = new TagLib::MP4::Item();
-
-			if (value == TagLib::String::null)
-			{
-				
-			}
-			else
-			{
-				
-			}
+			this->setM4ATag(value, mp4tag, tag);
 		}
 		return true;
 	}
@@ -925,8 +710,166 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 }
 
 
+/**
+ * Method to write ID3v2 tag to the file
+ *
+ * Currently supports given frames: comments frame, text ID frame, user URL frame and unsynced lyrics frame, 
+ * which are minimum required by the program to work.
+ *
+ * @param[in] value   New tag value, or TagLib::String::null if tag is to be deleted
+ * @param[in] id3tag  ID3v2 frame ID/name
+ * @param[in] tag     Pointer to TagLib::ID3v2::Tag object containing ID3v2 tags
+ */
+void MediaLibCleaner::File::setID3v2Tag(TagLib::String value, std::string id3tag, TagLib::ID3v2::Tag *tag)
+{
+	TagLib::ByteVector handle = id3tag.c_str();
+	if (value == TagLib::String::null)
+	{
+		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing ID3v2 tag '" + s2ws(id3tag), 3);
+		tag->removeFrames(handle);
+	}
+	else
+	{
+		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting ID3v2 tag '" + s2ws(id3tag) + L"' to new value: '" + value.toWString() + L"'", 3);
+		if (id3tag.length() > 1 && id3tag.substr(0, 1) == "C") // comments frame
+		{
+			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting comment type frame", 3);
+			if (!tag->frameList(handle).isEmpty())
+			{
+				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
+				tag->frameList(handle).front()->setText(value);
+			}
+			else
+			{
+				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
+				TagLib::ID3v2::CommentsFrame *frame = new TagLib::ID3v2::CommentsFrame(TagLib::String::UTF8);
+				frame->setText(value);
+				frame->setLanguage("eng");
+				tag->addFrame(frame);
+			}
+		}
+		else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "T") // Text ID frame
+		{
+			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting text type frame", 3);
+			if (!tag->frameList(handle).isEmpty())
+			{
+				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
+				tag->frameList(handle).front()->setText(value);
+			}
+			else
+			{
+				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
+				TagLib::ID3v2::TextIdentificationFrame *frame =
+					new TagLib::ID3v2::TextIdentificationFrame(handle, TagLib::String::UTF8);
+				tag->addFrame(frame);
+				frame->setText(value);
+			}
+		}
+		else if (id3tag.length() > 1 && id3tag.substr(0, 1) == "W") // URL frame
+		{
+			if (id3tag == "WXXX[WWW]") // user URL frame
+			{
+				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting URL user frame (WWW)", 3);
+				if (!tag->frameList(handle).isEmpty())
+				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
+					tag->frameList(handle).front()->setText(value);
+				}
+				else
+				{
+					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
+					TagLib::ID3v2::UserUrlLinkFrame *frame = new TagLib::ID3v2::UserUrlLinkFrame(TagLib::String::UTF8);
+					frame->setDescription("");
+					frame->setUrl(value);
+					tag->addFrame(frame);
+				}
+			}
+		}
+		else if (id3tag.length() >= 4 && id3tag.substr(0, 4) == "USLT") // Unsynced Lyrics frame
+		{
+			(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting lyrics frame", 3);
+			if (!tag->frameList(handle).isEmpty())
+			{
+				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
+				tag->frameList(handle).front()->setText(value);
+			}
+			else
+			{
+				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Creating and appending new frame", 3);
+				TagLib::ID3v2::UnsynchronizedLyricsFrame *frame = new TagLib::ID3v2::UnsynchronizedLyricsFrame(TagLib::String::UTF8);
+				frame->setText(value);
+				frame->setDescription("LYRICS");
+				frame->setLanguage("eng");
+				tag->addFrame(frame);
+			}
+		}
+	}
+}
 
+/**
+* Method to write APEv2 tag to the file
+*
+* @param[in] value   New tag value, or TagLib::String::null if tag is to be deleted
+* @param[in] apetag  APE tag name
+* @param[in] tag     Pointer to TagLib::APE::Tag object containing APE tags
+*/
+void MediaLibCleaner::File::setAPEv2Tag(TagLib::String value, std::string apetag, TagLib::APE::Tag *tag)
+{
+	if (value == TagLib::String::null)
+	{
+		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing APE tag '" + s2ws(apetag) + L"'", 3);
+		tag->removeItem(apetag);
+	}
+	else
+	{
+		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting APE tag '" + s2ws(apetag) + L"' to new value: '" + value.toWString() + L"'", 3);
+		TagLib::APE::Item *item = new TagLib::APE::Item(apetag, value);
+		tag->setItem(apetag, *item);
+	}
+}
 
+/**
+* Method to write XiphComment tag to the file
+*
+* @param[in] value    New tag value, or TagLib::String::null if one is to be deleted
+* @param[in] xiphtag  XiphComment tag name
+* @param[in] tag      Pointer to TagLib::Ogg::XiphComment object containing XiphComment tags
+*/
+void MediaLibCleaner::File::setXiphTag(TagLib::String value, std::string xiphtag, TagLib::Ogg::XiphComment *tag)
+{
+	if (value == TagLib::String::null)
+	{
+		tag->removeField(xiphtag);
+	}
+	else
+	{
+		tag->addField(xiphtag, value, true);
+	}
+}
+
+/**
+* Method to write MP4/M4A tag to the file
+*
+* @param[in] value    New tag value, or TagLib::String::null if one is to be deleted
+* @param[in] xiphtag  M4A tag name
+* @param[in] tag      Pointer to TagLib::MP4::Tag object containing MP4/M4A tags
+*/
+void setM4ATag(TagLib::String value, std::string m4atag, TagLib::MP4::Tag *tag)
+{
+	TagLib::StringList *values = new TagLib::StringList(value);
+	TagLib::MP4::Item *newitem = new TagLib::MP4::Item(values);
+
+	TagLib::MP4::Item *emptyitem = new TagLib::MP4::Item();
+
+	if (value == TagLib::String::null)
+	{
+
+	}
+	else
+	{
+
+	}
+}
 
 
 /**
@@ -1775,7 +1718,10 @@ MediaLibCleaner::DFC* MediaLibCleaner::File::GetDFC() {
 }
 
 /**
- * Method executed by process() after processing LUA script to save changes made by user script to the file
+ * Method executed by process() after processing LUA script to save changes made by user script to the file.
+ *
+ * It is important to not call save() on every tag change, as TagLib docs says:
+ * "In the current implementation, it's dangerous to call save() repeatedly. At worst it will corrupt the file."
  */
 void MediaLibCleaner::File::save()
 {

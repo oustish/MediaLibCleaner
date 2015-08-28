@@ -415,6 +415,10 @@ namespace MediaLibCleaner
 		std::unique_ptr<LogProgram>* logprogram;
 
 		bool setTagUniversal(std::string id3tag, std::string xiphtag, std::string apetag, std::string mp4tag, TagLib::String value = TagLib::String::null);
+		void setID3v2Tag(TagLib::String value, std::string id3tag, TagLib::ID3v2::Tag *tag);
+		void setAPEv2Tag(TagLib::String value, std::string apetag, TagLib::APE::Tag *tag);
+		void setXiphTag(TagLib::String value, std::string xiphtag, TagLib::Ogg::XiphComment *tag);
+		void setM4ATag(TagLib::String value, std::string m4atag, TagLib::MP4::Tag *tag);
 
 	public:
 
