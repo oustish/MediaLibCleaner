@@ -147,7 +147,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 		temp.swap(this->taglib_file_mp3);
 		this->filetype = FILETYPE_MP3;
 	}
-	else if (this->d_ext == L"ogg") {
+	else if (this->d_ext == L"ogg" || this->d_ext == L"oga") {
 		this->d_codec = L"Vorbis";
 
 		std::unique_ptr<TagLib::Ogg::Vorbis::File> temp(new TagLib::Ogg::Vorbis::File(TagLib::FileName(this->d_path.c_str())));
@@ -161,12 +161,25 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 		temp.swap(this->taglib_file_flac);
 		this->filetype = FILETYPE_FLAC;
 	}
-	else if (this->d_ext == L"m4a" || this->d_ext == L"mp4") {
-		this->d_codec = L"MPEG-4 ALAC";
-
+	else if (this->d_ext == L"m4a" || this->d_ext == L"mp4" || this->d_ext == L"aac") {
 		std::unique_ptr<TagLib::MP4::File> temp(new TagLib::MP4::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_m4a);
 		this->filetype = FILETYPE_MP4;
+
+		auto audioProp = this->taglib_file_m4a->audioProperties();
+		switch (audioProp->codec())
+		{
+		case TagLib::MP4::Properties::ALAC:
+			this->d_codec = L"MPEG-4 ALAC";
+			break;
+		case TagLib::MP4::Properties::AAC:
+			this->d_codec = L"MPEG-4 AAC";
+			break;
+		default:
+		case TagLib::MP4::Properties::Unknown:
+			this->d_codec = L"MPEG-4";
+			break;
+		}
 	}
 	else { this->isInitiated = false; this->filetype = FILETYPE_UNKNOWN; return; }
 
@@ -693,6 +706,16 @@ void MediaLibCleaner::File::getFLACXiphTags(TagLib::Ogg::XiphComment *xiphcommen
 	this->www = tags["WWW"].toString();
 
 	auto piclist = this->taglib_file_flac->pictureList();
+
+	if (piclist.size() == 0)
+	{
+		this->d_covers = 0;
+		this->d_cover_mimetype = L"none";
+		this->d_cover_type = L"none";
+		this->d_cover_size = 0;
+		return;
+	}
+
 	TagLib::FLAC::Picture *picture = piclist[0];
 
 	this->d_covers = piclist.size();
@@ -964,6 +987,8 @@ void MediaLibCleaner::File::getM4ATags()
 	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + this->d_path + L")", L"First part of tags is being read", 3);
 	for (auto it = taglist.begin(); it != taglist.end(); ++it)
 	{
+		std::wcout << it->first.toWString() << std::endl;
+
 		if (it->first.toWString() == L"aART")
 			this->albumartist = it->second.toStringList().toString(", ").toWString();
 		if (it->first.toWString() == L"----:com.apple.iTunes:LENGTH")
@@ -1016,6 +1041,8 @@ void MediaLibCleaner::File::getM4ATags()
 	TagLib::PropertyMap tags = this->taglib_file_m4a->tag()->properties();
 	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + this->d_path + L")", L"Second part of tags is being read", 3);
 	for (auto it = tags.begin(); it != tags.end(); ++it) {
+		std::wcout << it->first.toWString() << std::endl;
+
 		if (it->first.toWString() == L"BPM")
 			this->bpm = it->second.toString().toWString();
 		else if (it->first.toWString() == L"COPYRIGHT")
@@ -1063,7 +1090,21 @@ void MediaLibCleaner::File::clearExtendedTags()
 void MediaLibCleaner::File::setID3v2Tag(TagLib::String value, std::string id3tag, TagLib::ID3v2::Tag *tag)
 {
 	TagLib::ByteVector handle = id3tag.c_str();
-	if (value == TagLib::String::null)
+	if (id3tag == "WXXX[WWW]" && value == TagLib::String::null)
+	{
+		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing ID3v2 tag '" + s2ws(id3tag), 3);
+		auto frames = tag->frameList("WXXX");
+
+		for (auto it = frames.begin(); it != frames.end(); ++it)
+		{
+			auto fr = dynamic_cast<TagLib::ID3v2::UserUrlLinkFrame*>(*it);
+			if (fr->description() == "") {
+				tag->removeFrame(fr, true);
+				fr = nullptr;
+			}
+		}
+	}
+	else if (value == TagLib::String::null)
 	{
 		(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Removing ID3v2 tag '" + s2ws(id3tag), 3);
 		tag->removeFrames(handle);
@@ -1109,7 +1150,17 @@ void MediaLibCleaner::File::setID3v2Tag(TagLib::String value, std::string id3tag
 		{
 			if (id3tag == "WXXX[WWW]") // user URL frame
 			{
+				handle = "WXXX";
 				(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Setting URL user frame (WWW)", 3);
+				
+				auto wxxx_frames = tag->frameList(handle);
+				for (auto it = wxxx_frames.begin(); it != wxxx_frames.end(); ++it)
+				{
+					TagLib::ID3v2::UserUrlLinkFrame *fr = dynamic_cast<TagLib::ID3v2::UserUrlLinkFrame*>(*it);
+					if (fr->description() == "")
+						fr->setText(value);
+				}
+
 				if (!tag->frameList(handle).isEmpty())
 				{
 					(*this->logprogram)->Log(L"setTagUniversal(" + this->d_path + L")", L"Substitusion possible", 3);
@@ -1190,25 +1241,45 @@ void MediaLibCleaner::File::setXiphTag(TagLib::String value, std::string xiphtag
 /**
 * Method to write MP4/M4A tag to the file
 *
+* Works only for: ALBUM, ALBUMARTIST, ARTIST, BPM, COMMENT, COPYRIGHT, DATE, ENCODEDBY, GENRE, LANGUAGE, LYRICS, MOOD, TITLE, TRACKNUMBER
+*
 * @param[in] value   New tag value, or TagLib::String::null if one is to be deleted
 * @param[in] m4atag  M4A tag name
 * @param[in] tag     Pointer to TagLib::MP4::Tag object containing MP4/M4A tags
 */
 void MediaLibCleaner::File::setM4ATag(TagLib::String value, std::string m4atag, TagLib::MP4::Tag *tag)
 {
-	TagLib::StringList *values = new TagLib::StringList(value);
-	TagLib::MP4::Item *newitem = new TagLib::MP4::Item(values);
+	std::string key;
 
-	TagLib::MP4::Item *emptyitem = new TagLib::MP4::Item();
+	if (m4atag == "cART") key = "ARTIST";
+	else if (m4atag == "cnam") key = "TITLE";
+	else if (m4atag == "calb") key = "ALBUM";
+	else if (m4atag == "ccmt") key = "COMMENT";
+	else if (m4atag == "cgen") key = "GENRE";
+	else if (m4atag == "cday") key = "DATE";
+	else if (m4atag == "trkn") key = "TRACKNUMBER";
+	else if (m4atag == "aART") key = "ALBUMARTIST";
+	else if (m4atag == "tmpo") key = "BMP";
+	else if (m4atag == "cprt") key = "COPYRIGHT";
+	else if (m4atag == "----:com.apple.iTunes:LANGUAGE") key = "LANGUAGE";
+	else if (m4atag == "----:com.apple.iTunes:MOOD") key = "MOOD";
+	else if (m4atag == "----:com.apple.iTunes:ORIGYEAR") key = "ORIGINALDATE";
+	else if (m4atag == "clyr") key = "LYRICS";
+	else return;
+
+	auto props = tag->properties();
+	bool t = false;
 
 	if (value == TagLib::String::null)
 	{
-
+		props = props.erase(key);
 	}
 	else
 	{
-
+		t = props.replace(key, TagLib::StringList(value));
 	}
+
+	tag->setProperties(props);
 }
 
 
@@ -1227,7 +1298,7 @@ bool MediaLibCleaner::File::SetArtist(TagLib::String value)
 		this->artist = value;
 
 		// change value in file
-		return this->setTagUniversal("TPE1", "ARTIST", "ARTIST", "©ART", value);
+		return this->setTagUniversal("TPE1", "ARTIST", "ARTIST", "cART", value);
 	}
 	return false;
 }
@@ -1246,7 +1317,7 @@ bool MediaLibCleaner::File::SetTitle(TagLib::String value) {
 		this->title = value;
 
 		// change value in file
-		return this->setTagUniversal("TIT2", "TITLE", "TITLE", ws2s(L"\xa9nam"), value);
+		return this->setTagUniversal("TIT2", "TITLE", "TITLE", "cnam", value);
 	}
 	return false;
 }
@@ -1265,7 +1336,7 @@ bool MediaLibCleaner::File::SetAlbum(TagLib::String value) {
 		this->album = value;
 
 		// change value in file
-		return this->setTagUniversal("TALB", "ALBUM", "ALBUM", ws2s(L"\xa9alb"), value);
+		return this->setTagUniversal("TALB", "ALBUM", "ALBUM", "calb", value);
 	}
 	return false;
 }
@@ -1284,7 +1355,7 @@ bool MediaLibCleaner::File::SetGenre(TagLib::String value) {
 		this->genre = value;
 
 		// change value in file
-		return this->setTagUniversal("TCON", "GENRE", "GENRE", ws2s(L"\xa9gen"), value);
+		return this->setTagUniversal("TCON", "GENRE", "GENRE", "cgen", value);
 	}
 	return false;
 }
@@ -1303,7 +1374,7 @@ bool MediaLibCleaner::File::SetComment(TagLib::String value) {
 		this->comment = value;
 
 		// change value in file
-		return this->setTagUniversal("COMM", "COMMENT", "COMMENT", ws2s(L"\xa9cmt"), value);
+		return this->setTagUniversal("COMM", "COMMENT", "COMMENT", "ccmt", value);
 	}
 	return false;
 }
@@ -1341,7 +1412,7 @@ bool MediaLibCleaner::File::SetYear(TagLib::uint value) {
 		this->year = value;
 
 		// change value in file
-		return this->setTagUniversal("TYER", "YEAR", "YEAR", ws2s(L"\xa9day"), std::to_wstring(value));
+		return this->setTagUniversal("TYER", "YEAR", "YEAR", "cday", std::to_wstring(value));
 	}
 	return false;
 }
@@ -1422,7 +1493,7 @@ bool MediaLibCleaner::File::SetTagLength(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->length = value;
-		return this->setTagUniversal("TLEN", "LENGTH", "LENGTH", "----:com.apple.iTunes:LENGTH ", value);
+		return this->setTagUniversal("TLEN", "LENGTH", "LENGTH", "----:com.apple.iTunes:LENGTH", value);
 	}
 	return false;
 }
@@ -1518,7 +1589,7 @@ bool MediaLibCleaner::File::SetPublisher(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->publisher = value;
-		return this->setTagUniversal("TPUB", "ORGANIZATION", "PUBLISHER", "----:com.apple.iTunes:PUBLISHER ", value);
+		return this->setTagUniversal("TPUB", "ORGANIZATION", "PUBLISHER", "----:com.apple.iTunes:PUBLISHER", value);
 	}
 	return false;
 }
@@ -1534,7 +1605,7 @@ bool MediaLibCleaner::File::SetLyricsUnsynced(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->unsyncedlyrics = value;
-		return this->setTagUniversal("USLT", "UNSYNCEDLYRICS", "UNSYNCEDLYRICS", ws2s(L"\xa9lyr"), value);
+		return this->setTagUniversal("USLT", "UNSYNCEDLYRICS", "UNSYNCEDLYRICS", "clyr", value);
 	}
 	return false;
 }
