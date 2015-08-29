@@ -63,7 +63,6 @@
 #include <memory>
 
 #include "helpers.hpp"
-#include "base64.h"
 #include <mutex>
 #include <codecvt>
 
@@ -77,7 +76,7 @@
 namespace MediaLibCleaner
 {
 	/**
-	 * Enumerate type to distinct diffirent filetypes
+	 * @brief Enumerate type to distinct diffirent filetypes
 	 */
 	enum FileType
 	{
@@ -91,7 +90,7 @@ namespace MediaLibCleaner
 	/**
 	 * @class LogAlert MediaLibCleaner.hpp
 	 *
-	 * Class MediaLibCleaner::LogAlert enables app to print human readable messages regarding user-defined rules.
+	 * @brief Class MediaLibCleaner::LogAlert enables app to print human readable messages regarding user-defined rules.
 	 */
 	class LogAlert
 	{
@@ -125,7 +124,7 @@ namespace MediaLibCleaner
 	/**
 	 * @class LogProgram MediaLibCleaner.hpp
 	 *
-	 * Class MediaLibCleaner::LogProgram enables app to print human readable messages regarding program execution and debuging.
+	 * @brief Class MediaLibCleaner::LogProgram enables app to print human readable messages regarding program execution and debuging.
 	 */
 	class LogProgram
 	{
@@ -164,7 +163,7 @@ namespace MediaLibCleaner
 	/**
 	 * @class DFC MediaLibCleaner.hpp
 	 *
-	 * Class MediaLibCleaner::DFC (Directory Files Counter) is a class shared amongst all MediaLibCleaner::File objects.
+	 * @brief Class MediaLibCleaner::DFC (Directory Files Counter) is a class shared amongst all MediaLibCleaner::File objects.
 	 * It allows all those objects to know how much audio files are there in each directory
 	 */
 	class DFC {
@@ -203,7 +202,7 @@ namespace MediaLibCleaner
 	/**
 	* @class File MediaLibCleaner.hpp
 	*
-	* Class MediaLibCleaner::File contains all fileds and methods to effectively mainpulate (read and write) tags within a file.
+	* @brief Class MediaLibCleaner::File contains all fileds and methods to effectively mainpulate (read and write) tags within a file.
 	*/
 	class File {
 
@@ -438,6 +437,14 @@ namespace MediaLibCleaner
 		std::unique_ptr<LogProgram>* logprogram;
 
 		bool setTagUniversal(std::string id3tag, std::string xiphtag, std::string apetag, std::string mp4tag, TagLib::String value = TagLib::String::null);
+
+		void getID3v2Tags(TagLib::ID3v2::Tag*);
+		void getAPEv2Tags(TagLib::APE::ItemListMap);
+		void getFLACXiphTags(TagLib::Ogg::XiphComment*);
+		void getVorbisXiphTags(TagLib::Ogg::XiphComment*);
+		void getM4ATags();
+		void clearExtendedTags();
+
 		void setID3v2Tag(TagLib::String value, std::string id3tag, TagLib::ID3v2::Tag *tag);
 		void setAPEv2Tag(TagLib::String value, std::string apetag, TagLib::APE::Tag *tag);
 		void setXiphTag(TagLib::String value, std::string xiphtag, TagLib::Ogg::XiphComment *tag);
@@ -550,7 +557,7 @@ namespace MediaLibCleaner
 	/**
 	 * @class FilesAggregator MediaLibCleaner.hpp
 	 *
-	 * Class MediaLibCleaner::FilesAggregator aggregates all files that are subject to be processed acording to user-defined rules
+	 * @brief Class MediaLibCleaner::FilesAggregator aggregates all files that are subject to be processed acording to user-defined rules
 	 */
 	class FilesAggregator {
 
@@ -614,7 +621,7 @@ namespace MediaLibCleaner
 	/**
 	* @class PathsAggregator MediaLibCleaner.hpp
 	*
-	* Class MediaLibCleaner::PathsAggregator aggregates all files paths and prepares them to be feeded into MediaLibCleaner::File class
+	* @brief Class MediaLibCleaner::PathsAggregator aggregates all files paths and prepares them to be feeded into MediaLibCleaner::File class
 	*/
 	class PathsAggregator {
 
@@ -675,4 +682,7 @@ namespace MediaLibCleaner
 	};
 
 	MediaLibCleaner::DFC* AddDFC(std::list<MediaLibCleaner::DFC*>* dfc_list, boost::filesystem::path pth, std::mutex* synch, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la);
+	static std::string base64_encode_w(const std::vector<char>& buffer);
+	static std::string base64_encode(const char* buf, int bufLen);
+	static std::vector<char> base64_decode(std::string encoded_string);
 }

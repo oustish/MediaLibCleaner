@@ -186,20 +186,21 @@ static int lua_caller_delete(lua_State *L)
  * @return Exit code for entire program
  */
 int main(int argc, char *argv[]) {
-	// only one instance of program is allowed
-	// using named mutex
-	/*boost::interprocess::named_mutex global_mutex(boost::interprocess::open_or_create, "medialibcleaner_mutex_named");
-	boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(global_mutex, boost::interprocess::try_to_lock);
+	//>> - T: All engines look good, begining roll programe.
+	//>>      Prepare for stage 1 separation... Stage 1!
+	//>>      There is Mach 1.
+	//>>      Everybody good? Plenty of slaves for my robot colony?
+	//>> - D: They gave him a humor settings to fit better with his unit... He thinks it relaxes us.
+	//>> - c: A giant sarcastic robot... What a great idea.
+	//>> - T: I have cue light I can use <cue light flashes> when I joke if you like.
+	//>> - C: That would propably help.
+	//>> - T: Yeah, you can use it to find your way back to the ship after I blow you out the airlock... <cue light flashes>
+	//>> - C: What's your humor setting, TARS?
+	//>> - T: That's 100%.
+	//>> - C: Yeah, bring it down to 75%, please.
+	//>> - T: Stage 2 separation.
 
-	if (!lock)
-	{
-		std::wcout << L"CRITICAL ERROR: Only one instance of program is allowed. Please kill or wait for the first instance to complete, then re-launch the program." << std::endl;
-		return 4;
-	}*/
 
-	//debug
-	static std::basic_stringbuf<std::ostream::char_type> buf;
-	std::cerr.rdbuf(&buf);
 
 	// capture time app was launched
 	datetime_raw = time(nullptr);
@@ -640,6 +641,10 @@ int main(int argc, char *argv[]) {
 
 	std::wcout << L"Beginning program..." << std::endl;
 
+	//debug
+	static std::basic_stringbuf<std::ostream::char_type> buf;
+	std::cerr.rdbuf(&buf);
+
 	// converting from wstring to string
 	// IMPORTANT: uses Windows.h functions
 	// need to come up with solution for Linux-based OS later
@@ -698,6 +703,20 @@ int main(int argc, char *argv[]) {
 	error_level = static_cast<int>(lua_tonumber(L, -4));
 	max_threads = static_cast<int>(lua_tonumber(L, -5));
 
+
+	//>> - C: It's hard to leave everything... My kids, your father...
+	//>> - B: We're gonna be spending a lot of time together.
+	//>> - C: We should learn to talk.
+	//>> - B: And when not to.
+	//>>      Just being honest.
+	//>> - C: I don't think you need be that honest.
+	//>>      Hey, TARS? What's your honesty parameter?
+	//>> - T: 90%.
+	//>> - C: 90%?
+	//>> - T: Absolute honesty isn't always the most dyplomatic nor the safest form of comunication with emotional beings.
+	//>> - C: OK. 90% it is, doctor Brand.
+
+
 	std::unique_ptr<MediaLibCleaner::LogProgram> temp(new MediaLibCleaner::LogProgram(s2ws(error_log), error_level));
 	programlog.swap(temp);
 
@@ -748,6 +767,20 @@ int main(int argc, char *argv[]) {
 		path_list->AddPath(filepath);
 	}
 
+
+	//>> - D: We're coming up on the Endurance. 12 minutes out.
+	//>> - C: OK, taking control.
+	//>>      Approaching module port, 500 meters.
+	//>>      It's all you, Doyle.
+	//>>      Nice and easy, Doyle. Nice and easy.
+	//>> - D: I'm feeling good.
+	//>> - C: Take us home.
+	//>> - D: Locked.
+	//>> - C: Target locked.
+	//>> - D: Ok, helmets on.
+	//>> - B: Good job.
+
+
 	// parsing paths and files
 	// full multi-core support (in theory)
 	programlog->Log(L"Main", L"Beginning parsing paths and files", 3);
@@ -760,9 +793,29 @@ int main(int argc, char *argv[]) {
 	int thdmax = omp_get_max_threads();
 	current_file_thd = new MediaLibCleaner::File*[thdmax];
 
+
+	//>> - C: Rommilly, are you reading these forces?
+	//>> - R: Unbelievable.
+	//>> - D: A litteral heart of darkness.
+	//>> - R: If we could just see the collapsed star insinde - the singularity - yeah, we'd solve gravity.
+	//>> - C: We can't get anything from it?
+	//>> - R: Nothing escapes that horizon, not even light. All the answers there, just no way to see it.
+	//>> - B: There's Millers planet.
+	//>> - R: Goodbye, Ranger.
+
+
 	programlog->Log(L"Main", L"Starting iteration through collection.", 3);
 	std::wcout << L"Processing files..." << std::endl;
 	process(wconfig, &filesAggregator, &programlog);
+
+
+	// moment of relax :)
+	// follow it to the end
+
+	//>> - Did it worked?
+	//>> - I think it may have.
+	//>> - How do you know?
+
 
 	// deleting DFC objects
 	for (auto it = dfc_list.begin(); it != dfc_list.end(); ++it)
@@ -772,6 +825,12 @@ int main(int argc, char *argv[]) {
 	delete[] current_file_thd;
 	delete path_list;
 
+
+	//>> - Because the bulk being are closing the tesseract.
+	//>> - Don't you get it yet, TARS? They're not beings. They're us! (...)
+	//>> - Cooper, people couldn't build it.
+
+
 	// saving time diff for log output
 	time_t dt_end = time(nullptr);
 	time_t diff = dt_end - datetime_raw;
@@ -779,10 +838,16 @@ int main(int argc, char *argv[]) {
 	programlog->Log(L"Main", L"Program execution time: " + std::to_wstring(diff) + L" sec", 3);
 	programlog->Log(L"Main", L"Total files: " + std::to_wstring(total_files), 3);
 
+
+	//>> - No. No, not yet. But one day. Not you and me, but a people. The civilization that evolved past the dimmensions that we know.
+
+
 	programlog->Log(L"Main", L"Program finished", 3);
 
-	// http://www.etfroundup.com/wp-content/uploads/2014/11/thats_all_folks_wallpaper.jpg
 	return 0;
+
+
+	//>>   What happens now?
 }
 
 
@@ -933,6 +998,10 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 
 	if (max_threads > 0)
 		omp_set_num_threads(max_threads);
+
+
+	//>> - R: If we're talking about a couple of years, I can use time to research gravity. Observations from the wormhole - that's gold to professor Brand. 
+
 
 	#pragma omp parallel shared(lp, fA, wconfig) private(new_config, L, nc, s, cfile, id, wid)
 	{

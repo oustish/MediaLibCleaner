@@ -21,6 +21,34 @@
  */
 MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::unique_ptr<MediaLibCleaner::LogProgram>* logprogram, std::unique_ptr<MediaLibCleaner::LogAlert>* logalert)
 {
+	//>> - CASE: This is fast for atmosferic entry. Should we use thrusters to slow?
+	//>> - C: No. I'm gonna use Rangers aerodynamics to save some fuel.
+	//>> - CASE: Air-brake?
+	//>> - C: We wanna get donw fast, don't we?
+	//>> - B: Actually, we wanna get there in one piece.
+	//>> - C: Hang on.
+	//>> - CASE: Brand, Doyle - get ready.
+	//>>         We should ease.
+	//>> - C: Hand where I can see 'em, CASE. The only time I ever went down was when machine was easing at the wrong time.
+	//>> - CASE: A little caution would...
+	//>> - C: It gets you killed, just like reckless driving.
+	//>> - D: We going down too damn fast.
+	//>> - C: I got this.
+	//>> - CASE: Should I disable the feedback?
+	//>> - C: No, I need to feel the air.
+	//>>      (...)
+	//>> - D: (...)
+	//>> - B: (...)
+	//>> - CASE: 2000 meters.
+	//>> - C: Do we have fix on the beacon?
+	//>> - CASE: Got it. Can you maneuver?
+	//>> - C: We need to shave some speed. I'm gonna spiral down on top of it, everybody hang on.
+	//>> - CASE: 700.
+	//>> - C: On my cue, CASE. On my cue.
+	//>> - CASE: 500 meters.
+	//>> - C: Fire!
+
+
 	this->d_path = path;
 	this->d_dfc = dfc;
 	this->logalert = logalert;
@@ -150,671 +178,57 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 
 		if (this->taglib_file_mp3->hasID3v2Tag()) {
 			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Reading ID3v2 tags", 3);
-			TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
-			for (; it != id3v2tag->frameList().end(); ++it) {
-				std::wstring name = TagLib::String((*it)->frameID()).toWString();
-				std::wstring value = (*it)->toString().toWString();
-
-				if (name == L"TPE2") {
-					this->albumartist = value;
-				}
-				else if (name == L"TBPM") {
-					this->bpm = value;
-				}
-				else if (name == L"TCOP") {
-					this->copyright = value;
-				}
-				else if (name == L"TLAN") {
-					this->language = value;
-				}
-				else if (name == L"TLEN") {
-					this->length = value;
-				}
-				else if (name == L"TMOO") {
-					this->mood = value;
-				}
-				else if (name == L"TXXX" && value.substr(0, 6) == L"[MOOD]") {
-					this->mood = value.substr(12); // format: [MOOD] MOOD %mood%
-				}
-				else if (name == L"TOAL") {
-					this->origalbum = value;
-				}
-				else if (name == L"TOPE") {
-					this->origartist = value;
-				}
-				else if (name == L"TOFN") {
-					this->origfilename = value;
-				}
-				else if (name == L"TDOR") {
-					this->origyear = value;
-				}
-				else if (name == L"TPUB") {
-					this->publisher = value;
-				}
-				else if (name == L"USLT") {
-					this->unsyncedlyrics = value;
-				}
-				else if (name == L"WXXX" && value.substr(0, 2) == L"[]") {
-					this->www = value.substr(3);// format: [] www
-				}
-				else if (name == L"APIC")
-				{
-					this->d_covers++;
-
-					if (this->d_covers == 1)
-					{
-						TagLib::ID3v2::AttachedPictureFrame *frame = dynamic_cast<TagLib::ID3v2::AttachedPictureFrame*>(*it);
-						this->d_cover_mimetype = frame->mimeType().toWString();
-						this->d_cover_size = static_cast<size_t>(frame->size());
-
-						switch (frame->type())
-						{
-						default:
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Other:
-							this->d_cover_type = L"other";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::FileIcon:
-							this->d_cover_type = L"file icon";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::OtherFileIcon:
-							this->d_cover_type = L"other file icon";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::FrontCover:
-							this->d_cover_type = L"front cover";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::BackCover:
-							this->d_cover_type = L"back cover";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::LeafletPage:
-							this->d_cover_type = L"leaflet page";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Media:
-							this->d_cover_type = L"media";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::LeadArtist:
-							this->d_cover_type = L"lead artist";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Artist:
-							this->d_cover_type = L"artist";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Conductor:
-							this->d_cover_type = L"conductor";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Band:
-							this->d_cover_type = L"band";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Composer:
-							this->d_cover_type = L"composer";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Lyricist:
-							this->d_cover_type = L"lyricist";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::RecordingLocation:
-							this->d_cover_type = L"recording location";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::DuringRecording:
-							this->d_cover_type = L"during recording";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::DuringPerformance:
-							this->d_cover_type = L"during performance";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::MovieScreenCapture:
-							this->d_cover_type = L"movie screencapture";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::ColouredFish:
-							this->d_cover_type = L"coloured fish";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Illustration:
-							this->d_cover_type = L"illustration";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::BandLogo:
-							this->d_cover_type = L"band logo";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::PublisherLogo:
-							this->d_cover_type = L"publisher logo";
-							break;
-						}
-					}
-				}
-			}
+			this->getID3v2Tags(id3v2tag);
 		}
 		
 		else if (this->taglib_file_mp3->hasAPETag()) {
 			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Reading APE tags", 3);
 			TagLib::APE::ItemListMap tags = apetag->itemListMap();
-
-			for (auto it = tags.begin(); it != tags.end(); ++it)
-			{
-				std::cout << (*it).first << std::endl;
-			}
-
-			this->albumartist = tags["ALBUMARTIST"].toString();
-			this->bpm = tags["BPM"].toString();
-			this->copyright = tags["COPYRIGHT"].toString();
-			this->language = tags["LANGUAGE"].toString();
-			this->length = tags["LENGTH"].toString();
-			this->mood = tags["MOOD"].toString();
-			this->origalbum = tags["ORIGALBUM"].toString();
-			this->origartist = tags["ORIGARTIST"].toString();
-			this->origfilename = tags["ORIGFILENAME"].toString();
-			this->origyear = tags["ORIGYEAR"].toString();
-			this->publisher = tags["PUBLISHER"].toString();
-			this->unsyncedlyrics = tags["UNSYNCEDLYRICS"].toString();
-			this->www = tags["WWW"].toString();
-
-			auto cover = tags["COVER ART (FRONT)"];
-			if (cover.size() > 0)
-			{
-				this->d_covers++;
-				this->d_cover_size = static_cast<size_t>(cover.binaryData().size());
-				this->d_cover_type = L"front cover";
-				this->d_cover_mimetype = L"unknown";
-
-				TagLib::ByteVector b = cover.binaryData();
-				bool local_ext = false;
-				char buffer[10] = "";
-				int z = 0;
-				auto it = b.begin();
-
-				for (int i = 0; i < 1000; i++) {
-					if (!local_ext)
-					{
-						if (*it == '.')
-							local_ext = true;
-					}
-					else
-					{
-						if (*it == ' ') break;
-						buffer[z] = *it;
-						z++;
-					}
-					++it;
-				}
-
-				if (!strcmp(buffer, "jpg"))
-					this->d_cover_mimetype = L"image/jpeg";
-				else if (!strcmp(buffer, "png"))
-					this->d_cover_mimetype = L"imape/png";
-			}
+			this->getAPEv2Tags(tags);
 		}
 		else {
 			// ID3v1 dosen't have any of the extended tags
 			// clear them out to be on the safe side
 			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Has ID3v1 tags", 3);
-			this->albumartist = "";
-			this->bpm = "";
-			this->copyright = "";
-			this->language = "";
-			this->length = "";
-			this->mood = "";
-			this->origalbum = "";
-			this->origartist = "";
-			this->origfilename = "";
-			this->origyear = "";
-			this->publisher = "";
-			this->unsyncedlyrics = "";
-			this->www = "";
+			this->clearExtendedTags();
 		}
 	}
 	else if (this->filetype == FILETYPE_OGG) {
 		(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Is OGG file", 3);
-		TagLib::PropertyMap tags = this->taglib_file_ogg->tag()->properties();
-
-		for (auto it = tags.begin(); it != tags.end(); ++it) {
-			if (it->first.toWString() == L"ALBUMARTIST")
-				this->albumartist = it->second.toString().toWString();
-			else if (it->first.toWString() == L"BPM")
-				this->bpm = it->second.toString().toWString();
-			else if (it->first.toWString() == L"COPYRIGHT")
-				this->copyright = it->second.toString().toWString();
-			else if (it->first.toWString() == L"LANGUAGE")
-				this->language = it->second.toString().toWString();
-			else if (it->first.toWString() == L"LENGTH")
-				this->length = it->second.toString().toWString();
-			else if (it->first.toWString() == L"MOOD")
-				this->mood = it->second.toString().toWString();
-			else if (it->first.toWString() == L"ORIGALBUM")
-				this->origalbum = it->second.toString().toWString();
-			else if (it->first.toWString() == L"ORIGARTIST")
-				this->origartist = it->second.toString().toWString();
-			else if (it->first.toWString() == L"ORIGFILENAME")
-				this->origfilename = it->second.toString().toWString();
-			else if (it->first.toWString() == L"ORIGYEAR")
-				this->origyear = it->second.toString().toWString();
-			else if (it->first.toWString() == L"ORGANIZATION") // publisher
-				this->publisher = it->second.toString().toWString();
-			else if (it->first.toWString() == L"UNSYNCEDLYRICS")
-				this->unsyncedlyrics = it->second.toString().toWString();
-			else if (it->first.toWString() == L"URL" || it->first.toWString() == L"WWW")
-				this->www = it->second.toString().toWString();
-			else if (it->first.toWString() == L"METADATA_BLOCK_PICTURE") // FLAC type coverart; proposed: http://wiki.xiph.org/VorbisComment#METADATA_BLOCK_PICTURE
-			{
-				this->d_covers++;
-				if (this->d_covers != 1 && this->d_cover_type != L"unknown" && this->d_cover_mimetype != L"image/unknown") continue;
-
-				auto temp = it->second.toString().to8Bit();
-				auto data = Base64::decode(temp);
-				TagLib::ByteVector data_bv;
-
-				for (auto it = data.begin(); it != data.end(); ++it)
-				{
-					data_bv.append(*it);
-				}
-
-				TagLib::FLAC::Picture *pict = new TagLib::FLAC::Picture(data_bv);
-
-				this->d_cover_mimetype = pict->mimeType().toWString();
-				this->d_cover_size = pict->data().size();
-
-				switch (pict->type())
-				{
-				default:
-				case TagLib::FLAC::Picture::Type::Other:
-					this->d_cover_type = L"other";
-					break;
-				case TagLib::FLAC::Picture::Type::FileIcon:
-					this->d_cover_type = L"file icon";
-					break;
-				case TagLib::FLAC::Picture::Type::OtherFileIcon:
-					this->d_cover_type = L"other file icon";
-					break;
-				case TagLib::FLAC::Picture::Type::FrontCover:
-					this->d_cover_type = L"front cover";
-					break;
-				case TagLib::FLAC::Picture::Type::BackCover:
-					this->d_cover_type = L"back cover";
-					break;
-				case TagLib::FLAC::Picture::Type::LeafletPage:
-					this->d_cover_type = L"leaflet page";
-					break;
-				case TagLib::FLAC::Picture::Type::Media:
-					this->d_cover_type = L"media";
-					break;
-				case TagLib::FLAC::Picture::Type::LeadArtist:
-					this->d_cover_type = L"lead artist";
-					break;
-				case TagLib::FLAC::Picture::Type::Artist:
-					this->d_cover_type = L"artist";
-					break;
-				case TagLib::FLAC::Picture::Type::Conductor:
-					this->d_cover_type = L"conductor";
-					break;
-				case TagLib::FLAC::Picture::Type::Band:
-					this->d_cover_type = L"band";
-					break;
-				case TagLib::FLAC::Picture::Type::Composer:
-					this->d_cover_type = L"composer";
-					break;
-				case TagLib::FLAC::Picture::Type::Lyricist:
-					this->d_cover_type = L"lyricist";
-					break;
-				case TagLib::FLAC::Picture::Type::RecordingLocation:
-					this->d_cover_type = L"recording location";
-					break;
-				case TagLib::FLAC::Picture::Type::DuringRecording:
-					this->d_cover_type = L"during recording";
-					break;
-				case TagLib::FLAC::Picture::Type::DuringPerformance:
-					this->d_cover_type = L"during performance";
-					break;
-				case TagLib::FLAC::Picture::Type::MovieScreenCapture:
-					this->d_cover_type = L"movie screencapture";
-					break;
-				case TagLib::FLAC::Picture::Type::ColouredFish:
-					this->d_cover_type = L"coloured fish";
-					break;
-				case TagLib::FLAC::Picture::Type::Illustration:
-					this->d_cover_type = L"illustration";
-					break;
-				case TagLib::FLAC::Picture::Type::BandLogo:
-					this->d_cover_type = L"band logo";
-					break;
-				case TagLib::FLAC::Picture::Type::PublisherLogo:
-					this->d_cover_type = L"publisher logo";
-					break;
-				}
-
-				delete pict;
-			}
-			else if (it->first.toWString() == L"COVERART") // old, depreciated
-			{
-				this->d_covers++;
-
-				if (this->d_covers != 1) continue;
-
-				// only size is retriveable, since tag has no 'mimetype' nor 'type' saved
-				auto data = Base64::decode(it->second.toString().to8Bit());
-				
-				this->d_cover_size = data.size();
-				this->d_cover_mimetype = L"image/unknown";
-				this->d_cover_type = L"unknown";
-			}
-		}
+		this->getVorbisXiphTags(this->taglib_file_ogg->tag());
 	}
 	else if (this->filetype == FILETYPE_FLAC) {
 		(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Is FLAC file", 3);
-		TagLib::ID3v2::Tag *id3v2tag = this->taglib_file_flac->ID3v2Tag();
-		TagLib::Ogg::XiphComment *xiphcomment = this->taglib_file_flac->xiphComment();
 
 		if (this->taglib_file_flac->hasXiphComment()) {
 			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Reading Xips comments", 3);
-			TagLib::Ogg::FieldListMap tags = xiphcomment->fieldListMap();
-
-			this->albumartist = tags["ALBUMARTIST"].toString();
-			this->bpm = tags["BPM"].toString();
-			this->copyright = tags["COPYRIGHT"].toString();
-			this->language = tags["LANGUAGE"].toString();
-			this->length = tags["LENGTH"].toString();
-			this->mood = tags["MOOD"].toString();
-			this->origalbum = tags["ORIGALBUM"].toString();
-			this->origartist = tags["ORIGARTIST"].toString();
-			this->origfilename = tags["ORIGFILENAME"].toString();
-			this->origyear = tags["ORIGYEAR"].toString();
-			this->publisher = tags["ORGANIZATION"].toString();
-			this->unsyncedlyrics = tags["UNSYNCEDLYRICS"].toString();
-			this->www = tags["WWW"].toString();
-
-			auto piclist = this->taglib_file_flac->pictureList();
-			TagLib::FLAC::Picture *picture = piclist[0];
-
-			this->d_covers = piclist.size();
-			this->d_cover_mimetype = picture->mimeType().toWString();
-			this->d_cover_size = picture->data().size();
-
-			switch (picture->type())
-			{
-			default:
-			case TagLib::FLAC::Picture::Type::Other:
-				this->d_cover_type = L"other";
-				break;
-			case TagLib::FLAC::Picture::Type::FileIcon:
-				this->d_cover_type = L"file icon";
-				break;
-			case TagLib::FLAC::Picture::Type::OtherFileIcon:
-				this->d_cover_type = L"other file icon";
-				break;
-			case TagLib::FLAC::Picture::Type::FrontCover:
-				this->d_cover_type = L"front cover";
-				break;
-			case TagLib::FLAC::Picture::Type::BackCover:
-				this->d_cover_type = L"back cover";
-				break;
-			case TagLib::FLAC::Picture::Type::LeafletPage:
-				this->d_cover_type = L"leaflet page";
-				break;
-			case TagLib::FLAC::Picture::Type::Media:
-				this->d_cover_type = L"media";
-				break;
-			case TagLib::FLAC::Picture::Type::LeadArtist:
-				this->d_cover_type = L"lead artist";
-				break;
-			case TagLib::FLAC::Picture::Type::Artist:
-				this->d_cover_type = L"artist";
-				break;
-			case TagLib::FLAC::Picture::Type::Conductor:
-				this->d_cover_type = L"conductor";
-				break;
-			case TagLib::FLAC::Picture::Type::Band:
-				this->d_cover_type = L"band";
-				break;
-			case TagLib::FLAC::Picture::Type::Composer:
-				this->d_cover_type = L"composer";
-				break;
-			case TagLib::FLAC::Picture::Type::Lyricist:
-				this->d_cover_type = L"lyricist";
-				break;
-			case TagLib::FLAC::Picture::Type::RecordingLocation:
-				this->d_cover_type = L"recording location";
-				break;
-			case TagLib::FLAC::Picture::Type::DuringRecording:
-				this->d_cover_type = L"during recording";
-				break;
-			case TagLib::FLAC::Picture::Type::DuringPerformance:
-				this->d_cover_type = L"during performance";
-				break;
-			case TagLib::FLAC::Picture::Type::MovieScreenCapture:
-				this->d_cover_type = L"movie screencapture";
-				break;
-			case TagLib::FLAC::Picture::Type::ColouredFish:
-				this->d_cover_type = L"coloured fish";
-				break;
-			case TagLib::FLAC::Picture::Type::Illustration:
-				this->d_cover_type = L"illustration";
-				break;
-			case TagLib::FLAC::Picture::Type::BandLogo:
-				this->d_cover_type = L"band logo";
-				break;
-			case TagLib::FLAC::Picture::Type::PublisherLogo:
-				this->d_cover_type = L"publisher logo";
-				break;
-			}
-
-			delete picture;
+			this->getFLACXiphTags(this->taglib_file_flac->xiphComment());
 		}
 		else if (this->taglib_file_flac->hasID3v2Tag()) {
 			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Reading ID3v2 tags", 3);
-			TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
-			for (; it != id3v2tag->frameList().end(); ++it) {
-				std::wstring name = TagLib::String((*it)->frameID()).toWString();
-				std::wstring value = (*it)->toString().toWString();
-
-				if (name == L"TPE2") {
-					this->albumartist = value;
-				}
-				else if (name == L"TBPM") {
-					this->bpm = value;
-				}
-				else if (name == L"TCOP") {
-					this->copyright = value;
-				}
-				else if (name == L"TLAN") {
-					this->language = value;
-				}
-				else if (name == L"TLEN") {
-					this->length = value;
-				}
-				else if (name == L"TMOO") {
-					this->mood = value;
-				}
-				else if (name == L"TXXX" && value.substr(0, 6) == L"[MOOD]") {
-					this->mood = value.substr(12); // format: [MOOD] MOOD %mood%
-				}
-				else if (name == L"TOAL") {
-					this->origalbum = value;
-				}
-				else if (name == L"TOPE") {
-					this->origartist = value;
-				}
-				else if (name == L"TOFN") {
-					this->origfilename = value;
-				}
-				else if (name == L"TDOR") {
-					this->origyear = value;
-				}
-				else if (name == L"TPUB") {
-					this->publisher = value;
-				}
-				else if (name == L"USLT") {
-					this->unsyncedlyrics = value;
-				}
-				else if (name == L"WXXX" && value.substr(0, 2) == L"[]") {
-					this->www = value.substr(3);// format: [] www
-				}
-				else if (name == L"APIC")
-				{
-					this->d_covers++;
-
-					if (this->d_covers == 1)
-					{
-						TagLib::ID3v2::AttachedPictureFrame *frame = dynamic_cast<TagLib::ID3v2::AttachedPictureFrame*>(*it);
-						this->d_cover_mimetype = frame->mimeType().toWString();
-						this->d_cover_size = static_cast<size_t>(frame->size());
-
-						switch (frame->type())
-						{
-						default:
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Other:
-							this->d_cover_type = L"other";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::FileIcon:
-							this->d_cover_type = L"file icon";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::OtherFileIcon:
-							this->d_cover_type = L"other file icon";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::FrontCover:
-							this->d_cover_type = L"front cover";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::BackCover:
-							this->d_cover_type = L"back cover";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::LeafletPage:
-							this->d_cover_type = L"leaflet page";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Media:
-							this->d_cover_type = L"media";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::LeadArtist:
-							this->d_cover_type = L"lead artist";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Artist:
-							this->d_cover_type = L"artist";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Conductor:
-							this->d_cover_type = L"conductor";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Band:
-							this->d_cover_type = L"band";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Composer:
-							this->d_cover_type = L"composer";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Lyricist:
-							this->d_cover_type = L"lyricist";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::RecordingLocation:
-							this->d_cover_type = L"recording location";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::DuringRecording:
-							this->d_cover_type = L"during recording";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::DuringPerformance:
-							this->d_cover_type = L"during performance";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::MovieScreenCapture:
-							this->d_cover_type = L"movie screencapture";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::ColouredFish:
-							this->d_cover_type = L"coloured fish";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::Illustration:
-							this->d_cover_type = L"illustration";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::BandLogo:
-							this->d_cover_type = L"band logo";
-							break;
-						case TagLib::ID3v2::AttachedPictureFrame::Type::PublisherLogo:
-							this->d_cover_type = L"publisher logo";
-							break;
-						}
-					}
-				}
-			}
+			this->getID3v2Tags(this->taglib_file_flac->ID3v2Tag());
 		}
 		else {
 			// ID3v1 dosen't have any of the extended tags
 			// clear them out to be on the safe side
 			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Has ID3v1 tags", 3);
-			this->albumartist = "";
-			this->bpm = "";
-			this->copyright = "";
-			this->language = "";
-			this->length = "";
-			this->mood = "";
-			this->origalbum = "";
-			this->origartist = "";
-			this->origfilename = "";
-			this->origyear = "";
-			this->publisher = "";
-			this->unsyncedlyrics = "";
-			this->www = "";
+			this->clearExtendedTags();
 		}
 	}
 	else if (this->filetype == FILETYPE_MP4)
 	{
-		(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Is MP$/M4A file", 3);
-		TagLib::MP4::ItemListMap taglist = this->taglib_file_m4a->tag()->itemListMap();
-		(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"First part of tags is being read", 3);
-		for (auto it = taglist.begin(); it != taglist.end(); ++it)
-		{
-			if (it->first.toWString() == L"aART")
-				this->albumartist = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"----:com.apple.iTunes:LENGTH")
-				this->length = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGARTIST")
-				this->origartist = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGALBUM")
-				this->origalbum = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGFILENAME")
-				this->origfilename = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"----:com.apple.iTunes:ORIGYEAR")
-				this->origyear = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"----:com.apple.iTunes:PUBLISHER")
-				this->publisher = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"----:com.apple.iTunes:WWW")
-				this->www = it->second.toStringList().toString(", ").toWString();
-			if (it->first.toWString() == L"covr")
-			{
-				TagLib::MP4::CoverArtList calist = it->second.toCoverArtList();
-
-				this->d_covers = calist.size();
-
-				TagLib::MP4::CoverArt ca = calist[0];
-
-				this->d_cover_size = ca.data().size();
-				
-				if (ca.format() == TagLib::MP4::CoverArt::BMP)
-				{
-					this->d_cover_mimetype = L"image/x-portable-bitmap";
-				}
-				else if (ca.format() == TagLib::MP4::CoverArt::JPEG)
-				{
-					this->d_cover_mimetype = L"image/jpeg";
-				}
-				else if (ca.format() == TagLib::MP4::CoverArt::PNG)
-				{
-					this->d_cover_mimetype = L"image/png";
-				}
-				else if (ca.format() == TagLib::MP4::CoverArt::GIF)
-				{
-					this->d_cover_mimetype = L"image/gif";
-				}
-				else if (ca.format() == TagLib::MP4::CoverArt::Unknown)
-				{
-					this->d_cover_mimetype = L"image/unknown";
-				}
-			}
-		}
-
-		TagLib::PropertyMap tags = this->taglib_file_m4a->tag()->properties();
-		(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Second part of tags is being read", 3);
-		for (auto it = tags.begin(); it != tags.end(); ++it) {
-			if (it->first.toWString() == L"BPM")
-				this->bpm = it->second.toString().toWString();
-			else if (it->first.toWString() == L"COPYRIGHT")
-				this->copyright = it->second.toString().toWString();
-			else if (it->first.toWString() == L"LANGUAGE")
-				this->language = it->second.toString().toWString();
-			else if (it->first.toWString() == L"MOOD")
-				this->mood = it->second.toString().toWString();
-			else if (it->first.toWString() == L"LYRICS")
-				this->unsyncedlyrics = it->second.toString().toWString();
-		}
+		(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Is MP4/M4A file", 3);
+		this->getM4ATags();
 	}
 
 
 	// OTHER
 	this->isInitiated = true;
+
+
+
+	//>> - B: Very graceful.
+	//>> - C: No. But very... efficient.
 }
 
 /**
@@ -1117,6 +531,522 @@ bool MediaLibCleaner::File::setTagUniversal(std::string id3tag, std::string xiph
 		return true;
 	}
 	return false;
+}
+
+/**
+ * Reads and stores all extended tags read from TagLib::ID3v2::Tag object
+ *
+ * @param[in] id3v2tag  Object holding interface to read ID3v2 tags
+ */
+void MediaLibCleaner::File::getID3v2Tags(TagLib::ID3v2::Tag *id3v2tag)
+{
+	TagLib::ID3v2::FrameList::ConstIterator it = id3v2tag->frameList().begin();
+	for (; it != id3v2tag->frameList().end(); ++it) {
+		std::wstring name = TagLib::String((*it)->frameID()).toWString();
+		std::wstring value = (*it)->toString().toWString();
+
+		if (name == L"TPE2") {
+			this->albumartist = value;
+		}
+		else if (name == L"TBPM") {
+			this->bpm = value;
+		}
+		else if (name == L"TCOP") {
+			this->copyright = value;
+		}
+		else if (name == L"TLAN") {
+			this->language = value;
+		}
+		else if (name == L"TLEN") {
+			this->length = value;
+		}
+		else if (name == L"TMOO") {
+			this->mood = value;
+		}
+		else if (name == L"TXXX" && value.substr(0, 6) == L"[MOOD]") {
+			this->mood = value.substr(12); // format: [MOOD] MOOD %mood%
+		}
+		else if (name == L"TOAL") {
+			this->origalbum = value;
+		}
+		else if (name == L"TOPE") {
+			this->origartist = value;
+		}
+		else if (name == L"TOFN") {
+			this->origfilename = value;
+		}
+		else if (name == L"TDOR") {
+			this->origyear = value;
+		}
+		else if (name == L"TPUB") {
+			this->publisher = value;
+		}
+		else if (name == L"USLT") {
+			this->unsyncedlyrics = value;
+		}
+		else if (name == L"WXXX" && value.substr(0, 2) == L"[]") {
+			this->www = value.substr(3);// format: [] www
+		}
+		else if (name == L"APIC")
+		{
+			this->d_covers++;
+
+			if (this->d_covers == 1)
+			{
+				TagLib::ID3v2::AttachedPictureFrame *frame = dynamic_cast<TagLib::ID3v2::AttachedPictureFrame*>(*it);
+				this->d_cover_mimetype = frame->mimeType().toWString();
+				this->d_cover_size = static_cast<size_t>(frame->size());
+
+				switch (frame->type())
+				{
+				default:
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Other:
+					this->d_cover_type = L"other";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::FileIcon:
+					this->d_cover_type = L"file icon";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::OtherFileIcon:
+					this->d_cover_type = L"other file icon";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::FrontCover:
+					this->d_cover_type = L"front cover";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::BackCover:
+					this->d_cover_type = L"back cover";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::LeafletPage:
+					this->d_cover_type = L"leaflet page";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Media:
+					this->d_cover_type = L"media";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::LeadArtist:
+					this->d_cover_type = L"lead artist";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Artist:
+					this->d_cover_type = L"artist";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Conductor:
+					this->d_cover_type = L"conductor";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Band:
+					this->d_cover_type = L"band";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Composer:
+					this->d_cover_type = L"composer";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Lyricist:
+					this->d_cover_type = L"lyricist";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::RecordingLocation:
+					this->d_cover_type = L"recording location";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::DuringRecording:
+					this->d_cover_type = L"during recording";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::DuringPerformance:
+					this->d_cover_type = L"during performance";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::MovieScreenCapture:
+					this->d_cover_type = L"movie screencapture";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::ColouredFish:
+					this->d_cover_type = L"coloured fish";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::Illustration:
+					this->d_cover_type = L"illustration";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::BandLogo:
+					this->d_cover_type = L"band logo";
+					break;
+				case TagLib::ID3v2::AttachedPictureFrame::Type::PublisherLogo:
+					this->d_cover_type = L"publisher logo";
+					break;
+				}
+			}
+		}
+	}
+}
+
+/**
+* Reads and stores all extended tags read from TagLib::Ogg::Xiphcomment object (FLAC style)
+*
+* @param[in] xiphcomment  Object holding interface to read XiphComments tags (FLAC style)
+*/
+void MediaLibCleaner::File::getFLACXiphTags(TagLib::Ogg::XiphComment *xiphcomment)
+{
+	TagLib::Ogg::FieldListMap tags = xiphcomment->fieldListMap();
+
+	this->albumartist = tags["ALBUMARTIST"].toString();
+	this->bpm = tags["BPM"].toString();
+	this->copyright = tags["COPYRIGHT"].toString();
+	this->language = tags["LANGUAGE"].toString();
+	this->length = tags["LENGTH"].toString();
+	this->mood = tags["MOOD"].toString();
+	this->origalbum = tags["ORIGALBUM"].toString();
+	this->origartist = tags["ORIGARTIST"].toString();
+	this->origfilename = tags["ORIGFILENAME"].toString();
+	this->origyear = tags["ORIGYEAR"].toString();
+	this->publisher = tags["ORGANIZATION"].toString();
+	this->unsyncedlyrics = tags["UNSYNCEDLYRICS"].toString();
+	this->www = tags["WWW"].toString();
+
+	auto piclist = this->taglib_file_flac->pictureList();
+	TagLib::FLAC::Picture *picture = piclist[0];
+
+	this->d_covers = piclist.size();
+	this->d_cover_mimetype = picture->mimeType().toWString();
+	this->d_cover_size = picture->data().size();
+
+	switch (picture->type())
+	{
+	default:
+	case TagLib::FLAC::Picture::Type::Other:
+		this->d_cover_type = L"other";
+		break;
+	case TagLib::FLAC::Picture::Type::FileIcon:
+		this->d_cover_type = L"file icon";
+		break;
+	case TagLib::FLAC::Picture::Type::OtherFileIcon:
+		this->d_cover_type = L"other file icon";
+		break;
+	case TagLib::FLAC::Picture::Type::FrontCover:
+		this->d_cover_type = L"front cover";
+		break;
+	case TagLib::FLAC::Picture::Type::BackCover:
+		this->d_cover_type = L"back cover";
+		break;
+	case TagLib::FLAC::Picture::Type::LeafletPage:
+		this->d_cover_type = L"leaflet page";
+		break;
+	case TagLib::FLAC::Picture::Type::Media:
+		this->d_cover_type = L"media";
+		break;
+	case TagLib::FLAC::Picture::Type::LeadArtist:
+		this->d_cover_type = L"lead artist";
+		break;
+	case TagLib::FLAC::Picture::Type::Artist:
+		this->d_cover_type = L"artist";
+		break;
+	case TagLib::FLAC::Picture::Type::Conductor:
+		this->d_cover_type = L"conductor";
+		break;
+	case TagLib::FLAC::Picture::Type::Band:
+		this->d_cover_type = L"band";
+		break;
+	case TagLib::FLAC::Picture::Type::Composer:
+		this->d_cover_type = L"composer";
+		break;
+	case TagLib::FLAC::Picture::Type::Lyricist:
+		this->d_cover_type = L"lyricist";
+		break;
+	case TagLib::FLAC::Picture::Type::RecordingLocation:
+		this->d_cover_type = L"recording location";
+		break;
+	case TagLib::FLAC::Picture::Type::DuringRecording:
+		this->d_cover_type = L"during recording";
+		break;
+	case TagLib::FLAC::Picture::Type::DuringPerformance:
+		this->d_cover_type = L"during performance";
+		break;
+	case TagLib::FLAC::Picture::Type::MovieScreenCapture:
+		this->d_cover_type = L"movie screencapture";
+		break;
+	case TagLib::FLAC::Picture::Type::ColouredFish:
+		this->d_cover_type = L"coloured fish";
+		break;
+	case TagLib::FLAC::Picture::Type::Illustration:
+		this->d_cover_type = L"illustration";
+		break;
+	case TagLib::FLAC::Picture::Type::BandLogo:
+		this->d_cover_type = L"band logo";
+		break;
+	case TagLib::FLAC::Picture::Type::PublisherLogo:
+		this->d_cover_type = L"publisher logo";
+		break;
+	}
+
+	delete picture;
+}
+
+/**
+* Reads and stores all extended tags read from TagLib::Ogg::XiphComment object (OGG Vorbis style)
+*
+* @param[in] xiphcomment  Object holding interface to read XiphComment tags (OGG Vorbis style)
+*/
+void MediaLibCleaner::File::getVorbisXiphTags(TagLib::Ogg::XiphComment *xiphcomment)
+{
+	TagLib::PropertyMap tags = xiphcomment->properties();
+
+	for (auto it = tags.begin(); it != tags.end(); ++it) {
+		if (it->first.toWString() == L"ALBUMARTIST")
+			this->albumartist = it->second.toString().toWString();
+		else if (it->first.toWString() == L"BPM")
+			this->bpm = it->second.toString().toWString();
+		else if (it->first.toWString() == L"COPYRIGHT")
+			this->copyright = it->second.toString().toWString();
+		else if (it->first.toWString() == L"LANGUAGE")
+			this->language = it->second.toString().toWString();
+		else if (it->first.toWString() == L"LENGTH")
+			this->length = it->second.toString().toWString();
+		else if (it->first.toWString() == L"MOOD")
+			this->mood = it->second.toString().toWString();
+		else if (it->first.toWString() == L"ORIGALBUM")
+			this->origalbum = it->second.toString().toWString();
+		else if (it->first.toWString() == L"ORIGARTIST")
+			this->origartist = it->second.toString().toWString();
+		else if (it->first.toWString() == L"ORIGFILENAME")
+			this->origfilename = it->second.toString().toWString();
+		else if (it->first.toWString() == L"ORIGYEAR")
+			this->origyear = it->second.toString().toWString();
+		else if (it->first.toWString() == L"ORGANIZATION") // publisher
+			this->publisher = it->second.toString().toWString();
+		else if (it->first.toWString() == L"UNSYNCEDLYRICS")
+			this->unsyncedlyrics = it->second.toString().toWString();
+		else if (it->first.toWString() == L"URL" || it->first.toWString() == L"WWW")
+			this->www = it->second.toString().toWString();
+		else if (it->first.toWString() == L"METADATA_BLOCK_PICTURE") // FLAC type coverart; proposed: http://wiki.xiph.org/VorbisComment#METADATA_BLOCK_PICTURE
+		{
+			this->d_covers++;
+			if (this->d_covers != 1 && this->d_cover_type != L"unknown" && this->d_cover_mimetype != L"image/unknown") continue;
+
+			auto temp = it->second.toString().to8Bit();
+			auto data = base64_decode(temp);
+			TagLib::ByteVector data_bv;
+
+			for (auto it = data.begin(); it != data.end(); ++it)
+			{
+				data_bv.append(*it);
+			}
+
+			TagLib::FLAC::Picture *pict = new TagLib::FLAC::Picture(data_bv);
+
+			this->d_cover_mimetype = pict->mimeType().toWString();
+			this->d_cover_size = pict->data().size();
+
+			switch (pict->type())
+			{
+			default:
+			case TagLib::FLAC::Picture::Type::Other:
+				this->d_cover_type = L"other";
+				break;
+			case TagLib::FLAC::Picture::Type::FileIcon:
+				this->d_cover_type = L"file icon";
+				break;
+			case TagLib::FLAC::Picture::Type::OtherFileIcon:
+				this->d_cover_type = L"other file icon";
+				break;
+			case TagLib::FLAC::Picture::Type::FrontCover:
+				this->d_cover_type = L"front cover";
+				break;
+			case TagLib::FLAC::Picture::Type::BackCover:
+				this->d_cover_type = L"back cover";
+				break;
+			case TagLib::FLAC::Picture::Type::LeafletPage:
+				this->d_cover_type = L"leaflet page";
+				break;
+			case TagLib::FLAC::Picture::Type::Media:
+				this->d_cover_type = L"media";
+				break;
+			case TagLib::FLAC::Picture::Type::LeadArtist:
+				this->d_cover_type = L"lead artist";
+				break;
+			case TagLib::FLAC::Picture::Type::Artist:
+				this->d_cover_type = L"artist";
+				break;
+			case TagLib::FLAC::Picture::Type::Conductor:
+				this->d_cover_type = L"conductor";
+				break;
+			case TagLib::FLAC::Picture::Type::Band:
+				this->d_cover_type = L"band";
+				break;
+			case TagLib::FLAC::Picture::Type::Composer:
+				this->d_cover_type = L"composer";
+				break;
+			case TagLib::FLAC::Picture::Type::Lyricist:
+				this->d_cover_type = L"lyricist";
+				break;
+			case TagLib::FLAC::Picture::Type::RecordingLocation:
+				this->d_cover_type = L"recording location";
+				break;
+			case TagLib::FLAC::Picture::Type::DuringRecording:
+				this->d_cover_type = L"during recording";
+				break;
+			case TagLib::FLAC::Picture::Type::DuringPerformance:
+				this->d_cover_type = L"during performance";
+				break;
+			case TagLib::FLAC::Picture::Type::MovieScreenCapture:
+				this->d_cover_type = L"movie screencapture";
+				break;
+			case TagLib::FLAC::Picture::Type::ColouredFish:
+				this->d_cover_type = L"coloured fish";
+				break;
+			case TagLib::FLAC::Picture::Type::Illustration:
+				this->d_cover_type = L"illustration";
+				break;
+			case TagLib::FLAC::Picture::Type::BandLogo:
+				this->d_cover_type = L"band logo";
+				break;
+			case TagLib::FLAC::Picture::Type::PublisherLogo:
+				this->d_cover_type = L"publisher logo";
+				break;
+			}
+
+			delete pict;
+		}
+	}
+}
+
+/**
+* Reads and stores all extended tags read from TagLib::APE::ItemListMap object
+*
+* @param[in] tags  Object holding interface to read APEv2 tags
+*/
+void MediaLibCleaner::File::getAPEv2Tags(TagLib::APE::ItemListMap tags)
+{
+	this->albumartist = tags["ALBUMARTIST"].toString();
+	this->bpm = tags["BPM"].toString();
+	this->copyright = tags["COPYRIGHT"].toString();
+	this->language = tags["LANGUAGE"].toString();
+	this->length = tags["LENGTH"].toString();
+	this->mood = tags["MOOD"].toString();
+	this->origalbum = tags["ORIGALBUM"].toString();
+	this->origartist = tags["ORIGARTIST"].toString();
+	this->origfilename = tags["ORIGFILENAME"].toString();
+	this->origyear = tags["ORIGYEAR"].toString();
+	this->publisher = tags["PUBLISHER"].toString();
+	this->unsyncedlyrics = tags["UNSYNCEDLYRICS"].toString();
+	this->www = tags["WWW"].toString();
+
+	auto cover = tags["COVER ART (FRONT)"];
+	if (cover.size() > 0)
+	{
+		this->d_covers++;
+		this->d_cover_size = static_cast<size_t>(cover.binaryData().size());
+		this->d_cover_type = L"front cover";
+		this->d_cover_mimetype = L"unknown";
+
+		TagLib::ByteVector b = cover.binaryData();
+		bool local_ext = false;
+		char buffer[10] = "";
+		int z = 0;
+		auto it = b.begin();
+
+		for (int i = 0; i < 1000; i++) {
+			if (!local_ext)
+			{
+				if (*it == '.')
+					local_ext = true;
+			}
+			else
+			{
+				if (*it == ' ') break;
+				buffer[z] = *it;
+				z++;
+			}
+			++it;
+		}
+
+		if (!strcmp(buffer, "jpg"))
+			this->d_cover_mimetype = L"image/jpeg";
+		else if (!strcmp(buffer, "png"))
+			this->d_cover_mimetype = L"imape/png";
+	}
+}
+
+/**
+* Reads and stores all extended tags read from MP4/M4A file
+*/
+void MediaLibCleaner::File::getM4ATags()
+{
+	TagLib::MP4::ItemListMap taglist = this->taglib_file_m4a->tag()->itemListMap();
+	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + this->d_path + L")", L"First part of tags is being read", 3);
+	for (auto it = taglist.begin(); it != taglist.end(); ++it)
+	{
+		if (it->first.toWString() == L"aART")
+			this->albumartist = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"----:com.apple.iTunes:LENGTH")
+			this->length = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"----:com.apple.iTunes:ORIGARTIST")
+			this->origartist = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"----:com.apple.iTunes:ORIGALBUM")
+			this->origalbum = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"----:com.apple.iTunes:ORIGFILENAME")
+			this->origfilename = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"----:com.apple.iTunes:ORIGYEAR")
+			this->origyear = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"----:com.apple.iTunes:PUBLISHER")
+			this->publisher = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"----:com.apple.iTunes:WWW")
+			this->www = it->second.toStringList().toString(", ").toWString();
+		if (it->first.toWString() == L"covr")
+		{
+			TagLib::MP4::CoverArtList calist = it->second.toCoverArtList();
+
+			this->d_covers = calist.size();
+
+			TagLib::MP4::CoverArt ca = calist[0];
+
+			this->d_cover_size = ca.data().size();
+
+			if (ca.format() == TagLib::MP4::CoverArt::BMP)
+			{
+				this->d_cover_mimetype = L"image/x-portable-bitmap";
+			}
+			else if (ca.format() == TagLib::MP4::CoverArt::JPEG)
+			{
+				this->d_cover_mimetype = L"image/jpeg";
+			}
+			else if (ca.format() == TagLib::MP4::CoverArt::PNG)
+			{
+				this->d_cover_mimetype = L"image/png";
+			}
+			else if (ca.format() == TagLib::MP4::CoverArt::GIF)
+			{
+				this->d_cover_mimetype = L"image/gif";
+			}
+			else if (ca.format() == TagLib::MP4::CoverArt::Unknown)
+			{
+				this->d_cover_mimetype = L"image/unknown";
+			}
+		}
+	}
+
+	TagLib::PropertyMap tags = this->taglib_file_m4a->tag()->properties();
+	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + this->d_path + L")", L"Second part of tags is being read", 3);
+	for (auto it = tags.begin(); it != tags.end(); ++it) {
+		if (it->first.toWString() == L"BPM")
+			this->bpm = it->second.toString().toWString();
+		else if (it->first.toWString() == L"COPYRIGHT")
+			this->copyright = it->second.toString().toWString();
+		else if (it->first.toWString() == L"LANGUAGE")
+			this->language = it->second.toString().toWString();
+		else if (it->first.toWString() == L"MOOD")
+			this->mood = it->second.toString().toWString();
+		else if (it->first.toWString() == L"LYRICS")
+			this->unsyncedlyrics = it->second.toString().toWString();
+	}
+}
+
+/**
+* Clears all extended tags
+*/
+void MediaLibCleaner::File::clearExtendedTags()
+{
+	this->albumartist = "";
+	this->bpm = "";
+	this->copyright = "";
+	this->language = "";
+	this->length = "";
+	this->mood = "";
+	this->origalbum = "";
+	this->origartist = "";
+	this->origfilename = "";
+	this->origyear = "";
+	this->publisher = "";
+	this->unsyncedlyrics = "";
+	this->www = "";
 }
 
 
@@ -2227,6 +2157,13 @@ MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::GetFile(std::wstring fi
  * @return Currently selected MediaLibCleaner::File object stored inside FilesAggregator object
  */
 MediaLibCleaner::File* MediaLibCleaner::FilesAggregator::CurrentFile() {
+	//>> - CASE: He doesn't know the Endurance docking procedure.
+	//>> - C: But the autopilot does.
+	//>> - CASE: Not since TARS disabled it.
+	//>> - C: Nice.
+	//>>      What's your trust setting, TARS?
+	//>> - T: Lower than yours, aparently.
+	
 	std::list<MediaLibCleaner::File*>::iterator it = this->begin();
 	std::advance(it, this->cfile);
 
@@ -2684,4 +2621,139 @@ MediaLibCleaner::DFC* MediaLibCleaner::AddDFC(std::list<MediaLibCleaner::DFC*>* 
 
 	synch->unlock();
 	return newdfc;
+}
+
+
+
+
+
+
+
+
+/**
+ * Data useful in translating base64-encoded string into vector of chars
+ */
+static const char from_base64[] = { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62, 255, 62, 255, 63,
+52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 255, 255, 0, 255, 255, 255,
+255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 255, 255, 255, 255, 63,
+255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 255, 255, 255, 255, 255 };
+
+/**
+* Data useful in translating string into base64-encoded string
+*/
+static const char to_base64[] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"abcdefghijklmnopqrstuvwxyz"
+"0123456789+/";
+
+/**
+ * Function (wrapper) used to encode string
+ *
+ * @param[in] buffer  Input string
+ *
+ * @return base64-encoded string
+ */
+static std::string MediaLibCleaner::base64_encode_w(const std::vector<char>& buffer)
+{
+	return base64_encode(&buffer[0], static_cast<int>(buffer.size()));
+}
+
+/**
+* Function base64-encoding given strings
+*
+* @param[in] buf     Input string
+* @param[in] bufLen  Lenght of given buffer
+*
+* @return base64-encoded string
+*/
+static std::string MediaLibCleaner::base64_encode(const char* buf, int bufLen)
+{
+	// Calculate how many bytes that needs to be added to get a multiple of 3
+	size_t missing = 0;
+	size_t ret_size = bufLen;
+	while ((ret_size % 3) != 0)
+	{
+		++ret_size;
+		++missing;
+	}
+
+	// Expand the return string size to a multiple of 4
+	ret_size = 4 * ret_size / 3;
+
+	std::string ret;
+	ret.reserve(ret_size);
+
+	for (int i = 0; i<ret_size / 4; ++i)
+	{
+		// Read a group of three bytes (avoid buffer overrun by replacing with 0)
+		size_t index = i * 3;
+		char b3[3];
+		b3[0] = (index + 0 < bufLen) ? buf[index + 0] : 0;
+		b3[1] = (index + 1 < bufLen) ? buf[index + 1] : 0;
+		b3[2] = (index + 2 < bufLen) ? buf[index + 2] : 0;
+
+		// Transform into four base 64 characters
+		char b4[4];
+		b4[0] = ((b3[0] & 0xfc) >> 2);
+		b4[1] = ((b3[0] & 0x03) << 4) + ((b3[1] & 0xf0) >> 4);
+		b4[2] = ((b3[1] & 0x0f) << 2) + ((b3[2] & 0xc0) >> 6);
+		b4[3] = ((b3[2] & 0x3f) << 0);
+
+		// Add the base 64 characters to the return value
+		ret.push_back(to_base64[b4[0]]);
+		ret.push_back(to_base64[b4[1]]);
+		ret.push_back(to_base64[b4[2]]);
+		ret.push_back(to_base64[b4[3]]);
+	}
+
+	// Replace data that is invalid (always as many as there are missing bytes)
+	for (size_t i = 0; i<missing; ++i)
+		ret[ret_size - i - 1] = '=';
+
+	return ret;
+}
+
+/**
+* Function decoding base64-encoded string
+*
+* @param[in] encoded_string  base64-encoded string to be decoded
+*
+* @return std::vector of chars (decoded data)
+*/
+static std::vector<char> MediaLibCleaner::base64_decode(std::string encoded_string)
+{
+	// Make sure string length is a multiple of 4
+	while ((encoded_string.size() % 4) != 0)
+		encoded_string.push_back('=');
+
+	size_t encoded_size = encoded_string.size();
+	std::vector<char> ret;
+	ret.reserve(3 * encoded_size / 4);
+
+	for (size_t i = 0; i < encoded_size; i += 4)
+	{
+		// Get values for each group of four base 64 characters
+		char b4[4];
+		b4[0] = (encoded_string[i + 0] <= 'z') ? from_base64[encoded_string[i + 0]] : 0xff;
+		b4[1] = (encoded_string[i + 1] <= 'z') ? from_base64[encoded_string[i + 1]] : 0xff;
+		b4[2] = (encoded_string[i + 2] <= 'z') ? from_base64[encoded_string[i + 2]] : 0xff;
+		b4[3] = (encoded_string[i + 3] <= 'z') ? from_base64[encoded_string[i + 3]] : 0xff;
+
+		// Transform into a group of three bytes
+		char b3[3];
+		b3[0] = ((b4[0] & 0x3f) << 2) + ((b4[1] & 0x30) >> 4);
+		b3[1] = ((b4[1] & 0x0f) << 4) + ((b4[2] & 0x3c) >> 2);
+		b3[2] = ((b4[2] & 0x03) << 6) + ((b4[3] & 0x3f) >> 0);
+
+		// Add the byte to the return value if it isn't part of an '=' character (indicated by 0xff)
+		if (b4[1] != 0xff) ret.push_back(b3[0]);
+		if (b4[2] != 0xff) ret.push_back(b3[1]);
+		if (b4[3] != 0xff) ret.push_back(b3[2]);
+	}
+
+	return ret;
 }
