@@ -987,8 +987,6 @@ void MediaLibCleaner::File::getM4ATags()
 	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + this->d_path + L")", L"First part of tags is being read", 3);
 	for (auto it = taglist.begin(); it != taglist.end(); ++it)
 	{
-		std::wcout << it->first.toWString() << std::endl;
-
 		if (it->first.toWString() == L"aART")
 			this->albumartist = it->second.toStringList().toString(", ").toWString();
 		if (it->first.toWString() == L"----:com.apple.iTunes:LENGTH")
@@ -1041,8 +1039,6 @@ void MediaLibCleaner::File::getM4ATags()
 	TagLib::PropertyMap tags = this->taglib_file_m4a->tag()->properties();
 	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + this->d_path + L")", L"Second part of tags is being read", 3);
 	for (auto it = tags.begin(); it != tags.end(); ++it) {
-		std::wcout << it->first.toWString() << std::endl;
-
 		if (it->first.toWString() == L"BPM")
 			this->bpm = it->second.toString().toWString();
 		else if (it->first.toWString() == L"COPYRIGHT")
@@ -1100,7 +1096,6 @@ void MediaLibCleaner::File::setID3v2Tag(TagLib::String value, std::string id3tag
 			auto fr = dynamic_cast<TagLib::ID3v2::UserUrlLinkFrame*>(*it);
 			if (fr->description() == "") {
 				tag->removeFrame(fr, true);
-				fr = nullptr;
 			}
 		}
 	}
@@ -1249,34 +1244,16 @@ void MediaLibCleaner::File::setXiphTag(TagLib::String value, std::string xiphtag
 */
 void MediaLibCleaner::File::setM4ATag(TagLib::String value, std::string m4atag, TagLib::MP4::Tag *tag)
 {
-	std::string key;
-
-	if (m4atag == "cART") key = "ARTIST";
-	else if (m4atag == "cnam") key = "TITLE";
-	else if (m4atag == "calb") key = "ALBUM";
-	else if (m4atag == "ccmt") key = "COMMENT";
-	else if (m4atag == "cgen") key = "GENRE";
-	else if (m4atag == "cday") key = "DATE";
-	else if (m4atag == "trkn") key = "TRACKNUMBER";
-	else if (m4atag == "aART") key = "ALBUMARTIST";
-	else if (m4atag == "tmpo") key = "BMP";
-	else if (m4atag == "cprt") key = "COPYRIGHT";
-	else if (m4atag == "----:com.apple.iTunes:LANGUAGE") key = "LANGUAGE";
-	else if (m4atag == "----:com.apple.iTunes:MOOD") key = "MOOD";
-	else if (m4atag == "----:com.apple.iTunes:ORIGYEAR") key = "ORIGINALDATE";
-	else if (m4atag == "clyr") key = "LYRICS";
-	else return;
-
 	auto props = tag->properties();
 	bool t = false;
 
 	if (value == TagLib::String::null)
 	{
-		props = props.erase(key);
+		props = props.erase(m4atag);
 	}
 	else
 	{
-		t = props.replace(key, TagLib::StringList(value));
+		t = props.replace(m4atag, TagLib::StringList(value));
 	}
 
 	tag->setProperties(props);
@@ -1298,7 +1275,7 @@ bool MediaLibCleaner::File::SetArtist(TagLib::String value)
 		this->artist = value;
 
 		// change value in file
-		return this->setTagUniversal("TPE1", "ARTIST", "ARTIST", "cART", value);
+		return this->setTagUniversal("TPE1", "ARTIST", "ARTIST", "ARTIST", value);
 	}
 	return false;
 }
@@ -1317,7 +1294,7 @@ bool MediaLibCleaner::File::SetTitle(TagLib::String value) {
 		this->title = value;
 
 		// change value in file
-		return this->setTagUniversal("TIT2", "TITLE", "TITLE", "cnam", value);
+		return this->setTagUniversal("TIT2", "TITLE", "TITLE", "TITLE", value);
 	}
 	return false;
 }
@@ -1336,7 +1313,7 @@ bool MediaLibCleaner::File::SetAlbum(TagLib::String value) {
 		this->album = value;
 
 		// change value in file
-		return this->setTagUniversal("TALB", "ALBUM", "ALBUM", "calb", value);
+		return this->setTagUniversal("TALB", "ALBUM", "ALBUM", "ALBUM", value);
 	}
 	return false;
 }
@@ -1355,7 +1332,7 @@ bool MediaLibCleaner::File::SetGenre(TagLib::String value) {
 		this->genre = value;
 
 		// change value in file
-		return this->setTagUniversal("TCON", "GENRE", "GENRE", "cgen", value);
+		return this->setTagUniversal("TCON", "GENRE", "GENRE", "GENRE", value);
 	}
 	return false;
 }
@@ -1374,7 +1351,7 @@ bool MediaLibCleaner::File::SetComment(TagLib::String value) {
 		this->comment = value;
 
 		// change value in file
-		return this->setTagUniversal("COMM", "COMMENT", "COMMENT", "ccmt", value);
+		return this->setTagUniversal("COMM", "COMMENT", "COMMENT", "COMMENT", value);
 	}
 	return false;
 }
@@ -1393,7 +1370,7 @@ bool MediaLibCleaner::File::SetTrack(TagLib::uint value) {
 		this->track = value;
 
 		// change value in file
-		return this->setTagUniversal("TRCK", "TRACKNUMBER", "TRACK", "trkn", std::to_wstring(value));
+		return this->setTagUniversal("TRCK", "TRACKNUMBER", "TRACK", "TRACKNUMBER", std::to_wstring(value));
 	}
 	return false;
 }
@@ -1412,7 +1389,7 @@ bool MediaLibCleaner::File::SetYear(TagLib::uint value) {
 		this->year = value;
 
 		// change value in file
-		return this->setTagUniversal("TYER", "YEAR", "YEAR", "cday", std::to_wstring(value));
+		return this->setTagUniversal("TYER", "YEAR", "YEAR", "DATE", std::to_wstring(value));
 	}
 	return false;
 }
@@ -1429,7 +1406,7 @@ bool MediaLibCleaner::File::SetAlbumArtist(TagLib::String value)
 	if (this->isInitiated)
 	{
 		this->albumartist = value;
-		return this->setTagUniversal("TPE2", "ALBUMARTIST", "ALBUMARTIST", "aART", value);
+		return this->setTagUniversal("TPE2", "ALBUMARTIST", "ALBUMARTIST", "ALBUMARTIST", value);
 	}
 	return false;
 }
@@ -1445,7 +1422,7 @@ bool MediaLibCleaner::File::SetBPM(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->bpm = value;
-		return this->setTagUniversal("TBPM", "BPM", "BPM", "tmpo", value);
+		return this->setTagUniversal("TBPM", "BPM", "BPM", "BPM", value);
 	}
 	return false;
 }
@@ -1461,7 +1438,7 @@ bool MediaLibCleaner::File::SetCopyright(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->copyright = value;
-		return this->setTagUniversal("TCOP", "COPYRIGHT", "COPYRIGHT", "cprt", value);
+		return this->setTagUniversal("TCOP", "COPYRIGHT", "COPYRIGHT", "COPYRIGHT", value);
 	}
 	return false;
 }
@@ -1477,7 +1454,7 @@ bool MediaLibCleaner::File::SetLanguage(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->language = value;
-		return this->setTagUniversal("TLAN", "LANGUAGE", "LANGUAGE", "----:com.apple.iTunes:LANGUAGE", value);
+		return this->setTagUniversal("TLAN", "LANGUAGE", "LANGUAGE", "LANGUAGE", value);
 	}
 	return false;
 }
@@ -1493,7 +1470,7 @@ bool MediaLibCleaner::File::SetTagLength(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->length = value;
-		return this->setTagUniversal("TLEN", "LENGTH", "LENGTH", "----:com.apple.iTunes:LENGTH", value);
+		return this->setTagUniversal("TLEN", "LENGTH", "LENGTH", "LENGTH", value);
 	}
 	return false;
 }
@@ -1509,7 +1486,7 @@ bool MediaLibCleaner::File::SetMood(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->mood = value;
-		return this->setTagUniversal("TMOO", "MOOD", "MOOD", "----:com.apple.iTunes:MOOD", value);
+		return this->setTagUniversal("TMOO", "MOOD", "MOOD", "MOOD", value);
 	}
 	return false;
 }
@@ -1525,7 +1502,7 @@ bool MediaLibCleaner::File::SetOrigAlbum(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->origalbum = value;
-		return this->setTagUniversal("TOAL", "ORIGALBUM", "ORIGALBUM", "----:com.apple.iTunes:ORIGALBUM", value);
+		return this->setTagUniversal("TOAL", "ORIGALBUM", "ORIGALBUM", "ORIGALBUM", value);
 	}
 	return false;
 }
@@ -1541,7 +1518,7 @@ bool MediaLibCleaner::File::SetOrigArtist(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->origartist = value;
-		return this->setTagUniversal("TOPE", "ORIGARTIST", "ORIGARTIST", "----:com.apple.iTunes:ORIGARTIST", value);
+		return this->setTagUniversal("TOPE", "ORIGARTIST", "ORIGARTIST", "ORIGARTIST", value);
 	}
 	return false;
 }
@@ -1557,7 +1534,7 @@ bool MediaLibCleaner::File::SetOrigFilename(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->origfilename = value;
-		return this->setTagUniversal("TOFN", "ORIGFILENAME", "ORIGFILENAME", "----:com.apple.iTunes:ORIGFILENAME", value);
+		return this->setTagUniversal("TOFN", "ORIGFILENAME", "ORIGFILENAME", "ORIGFILENAME", value);
 	}
 	return false;
 }
@@ -1573,7 +1550,7 @@ bool MediaLibCleaner::File::SetOrigYear(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->origyear = value;
-		return this->setTagUniversal("TDOR", "ORIGYEAR", "ORIGYEAR", "----:com.apple.iTunes:ORIGYEAR", value);
+		return this->setTagUniversal("TDOR", "ORIGYEAR", "ORIGYEAR", "ORIGYEAR", value);
 	}
 	return false;
 }
@@ -1589,7 +1566,7 @@ bool MediaLibCleaner::File::SetPublisher(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->publisher = value;
-		return this->setTagUniversal("TPUB", "ORGANIZATION", "PUBLISHER", "----:com.apple.iTunes:PUBLISHER", value);
+		return this->setTagUniversal("TPUB", "ORGANIZATION", "PUBLISHER", "PUBLISHER", value);
 	}
 	return false;
 }
@@ -1605,7 +1582,7 @@ bool MediaLibCleaner::File::SetLyricsUnsynced(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->unsyncedlyrics = value;
-		return this->setTagUniversal("USLT", "UNSYNCEDLYRICS", "UNSYNCEDLYRICS", "clyr", value);
+		return this->setTagUniversal("USLT", "UNSYNCEDLYRICS", "UNSYNCEDLYRICS", "LYRICS", value);
 	}
 	return false;
 }
@@ -1621,7 +1598,7 @@ bool MediaLibCleaner::File::SetWWW(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		this->www = value;
-		return this->setTagUniversal("WXXX[WWW]", "WWW", "WWW", "----:com.apple.iTunes:WWW", value);
+		return this->setTagUniversal("WXXX[WWW]", "WWW", "WWW", "WWW", value);
 	}
 	return false;
 }

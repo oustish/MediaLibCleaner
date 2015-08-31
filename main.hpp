@@ -26,6 +26,9 @@ This project is using these libraries:
 	<li><b>taglib</b> - licensed under LGPL and MPL.</li>
 </ul>
 */
+#ifdef _MLC_DEBUG
+#include <vld/vld.h>
+#endif
 
 #include <iostream>
 #include <memory> // for unique_ptr
@@ -52,6 +55,7 @@ This project is using these libraries:
 #include <Windows.h>
 
 #include <omp.h>
+
 
 
 void lua_error_reporting(lua_State*, int);

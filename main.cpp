@@ -201,6 +201,9 @@ int main(int argc, char *argv[]) {
 	//>> - T: Stage 2 separation.
 
 
+	// for performance wizard
+	Sleep(5 * 1000); // 5 secs initial halt
+
 
 	// capture time app was launched
 	datetime_raw = time(nullptr);
@@ -641,9 +644,11 @@ int main(int argc, char *argv[]) {
 
 	std::wcout << L"Beginning program..." << std::endl;
 
+#ifdef _MLC_DEBUG
 	//debug
 	static std::basic_stringbuf<std::ostream::char_type> buf;
 	std::cerr.rdbuf(&buf);
+#endif
 
 	// converting from wstring to string
 	// IMPORTANT: uses Windows.h functions
@@ -840,6 +845,10 @@ int main(int argc, char *argv[]) {
 
 
 	//>> - No. No, not yet. But one day. Not you and me, but a people. The civilization that evolved past the dimmensions that we know.
+
+	// needs to be done this way to avoid massive amount of std::wcout calls upon destruction
+	MediaLibCleaner::FilesAggregator *d = filesAggregator.release();
+	delete d;
 
 
 	programlog->Log(L"Main", L"Program finished", 3);
