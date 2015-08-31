@@ -111,8 +111,6 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 	// check if file is in fact audio file (as it sometimes cannot be!)
 	// effect: this->isInitalized == false, but rest info (about files) is present
 	if (this->fileref->isNull()) return;
-
-	this->d_dfc->IncCount();
 	
 	// SONG INFO
 	(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Reading basic song tags", 3);
@@ -181,7 +179,13 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 			break;
 		}
 	}
-	else { this->isInitiated = false; this->filetype = FILETYPE_UNKNOWN; return; }
+	else
+	{
+		this->isInitiated = false;
+		this->filetype = FILETYPE_UNKNOWN;
+
+		return;
+	}
 
 
 	if (this->filetype == FILETYPE_MP3) { // ID3v1, ID3v2 or APE tags present
@@ -237,7 +241,8 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 
 	// OTHER
 	this->isInitiated = true;
-
+	this->d_dfc->IncCount();
+	this->d_counter_dir++;
 
 
 	//>> - B: Very graceful.
@@ -1008,6 +1013,15 @@ void MediaLibCleaner::File::getM4ATags()
 			TagLib::MP4::CoverArtList calist = it->second.toCoverArtList();
 
 			this->d_covers = calist.size();
+
+			if (calist.size() < 0)
+			{
+				this->d_cover_size = 0;
+				this->d_cover_mimetype = L"none";
+				this->d_cover_type = L"none";
+
+				continue;
+			}
 
 			TagLib::MP4::CoverArt ca = calist[0];
 
@@ -1920,6 +1934,26 @@ std::wstring MediaLibCleaner::File::GetFileSizeKB() {
 */
 std::wstring MediaLibCleaner::File::GetFileSizeMB() {
 	return std::to_wstring(this->d_file_size_bytes / 1048576) + L"MB";
+}
+
+/**
+ * Method returns file directory counter
+ *
+ * @return File directory counter
+ */
+int MediaLibCleaner::File::GetCounterDir()
+{
+	return this->d_counter_dir;
+}
+
+/**
+* Method returns total files count in directory
+*
+* @return Total count of files inside directory
+*/
+int MediaLibCleaner::File::GetCounterTotal()
+{
+	return this->d_dfc->GetCounter();
 }
 
 

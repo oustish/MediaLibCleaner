@@ -397,6 +397,11 @@ namespace MediaLibCleaner
 		DFC* d_dfc = nullptr;
 
 		/**
+		 * Counter in given directory (starts from 1)
+		 */
+		int d_counter_dir = 0;
+
+		/**
 		 * Variable allowing for easy access to some of the tags and properities inside audio file
 		 */
 		std::unique_ptr<TagLib::FileRef> fileref;
@@ -539,6 +544,9 @@ namespace MediaLibCleaner
 		size_t GetFileSizeBytes();
 		std::wstring GetFileSizeKB();
 		std::wstring GetFileSizeMB();
+
+		int GetCounterDir();
+		int GetCounterTotal();
 
 		// methods for lua processor manipulations
 		bool HasTag(std::wstring tag, TagLib::String val = TagLib::String::null);

@@ -952,8 +952,9 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 #ifdef WIN32
 	replaceAll(newc, L"%_volume%", audiofile->GetVolume());
 #endif
-	//replaceAll(_newc, "%_workingdir%", );
-	//replaceAll(_newc, "%_workingpath%", );
+	boost::filesystem::path loc_path = path;
+	replaceAll(newc, L"%_workingdir%", loc_path.filename().generic_wstring());
+	replaceAll(newc, L"%_workingpath%", loc_path.generic_wstring());
 
 
 	// FILES PROPERTIES
@@ -970,13 +971,13 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 
 
 	// SYSTEM DATA
-	//replaceAll(newc, L"%_counter_dir%", L"0");
+	replaceAll(newc, L"%_counter_dir%", std::to_wstring(audiofile->GetCounterDir()));
 	replaceAll(newc, L"%_counter_total%", std::to_wstring(total_files));
 	replaceAll(newc, L"%_date%", get_date_iso_8601_wide(datetime_raw));
 	replaceAll(newc, L"%_datetime%", get_date_rfc_2822_wide(datetime_raw));
 	replaceAll(newc, L"%_datetime_raw%", std::to_wstring(datetime_raw));
 	replaceAll(newc, L"%_total_files%", std::to_wstring(total_files));
-	replaceAll(newc, L"%_total_files_dir%", std::to_wstring(audiofile->GetDFC()->GetCounter()));
+	replaceAll(newc, L"%_total_files_dir%", std::to_wstring(audiofile->GetCounterTotal()));
 
 	replaceAll(newc, L"\\", L"\\\\");
 
