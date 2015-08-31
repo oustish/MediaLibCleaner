@@ -114,13 +114,13 @@ static int lua_caller_setrequiredtags(lua_State *L)
 *
 * @return Number of output arguments on stack for lua processor
 */
-static int lua_caller_checktagsvalues(lua_State *L)
+static int lua_caller_checktagvalues(lua_State *L)
 {
 	lua_getglobal(L, "__thread");
 	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
-	return lua_CheckTagsValues(L, cfile, &programlog, &alertlog);
+	return lua_CheckTagValues(L, cfile, &programlog, &alertlog);
 }
 
 /**
@@ -665,7 +665,7 @@ int main(int argc, char *argv[]) {
 	lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
 	lua_register(L, "_SetTags", lua_caller_settags);
 	lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
-	lua_register(L, "_CheckTagsValues", lua_caller_checktagsvalues);
+	lua_register(L, "_CheckTagValues", lua_caller_checktagvalues);
 	lua_register(L, "_Rename", lua_caller_rename);
 	lua_register(L, "_Move", lua_caller_move);
 	lua_register(L, "_Delete", lua_caller_delete);
@@ -912,8 +912,8 @@ std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File
 	replaceAll(newc, L"%album%", audiofile->GetAlbum());
 	replaceAll(newc, L"%genre%", audiofile->GetGenre());
 	replaceAll(newc, L"%comment%", audiofile->GetComment());
-	replaceAll(newc, L"%track%", std::to_wstring(audiofile->GetTrack()));
-	replaceAll(newc, L"%year%", std::to_wstring(audiofile->GetYear()));
+	replaceAll(newc, L"%track%", audiofile->GetTrack());
+	replaceAll(newc, L"%year%", audiofile->GetYear());
 	replaceAll(newc, L"%albumartist%", audiofile->GetAlbumArtist());
 	replaceAll(newc, L"%bpm%", audiofile->GetBPM());
 	replaceAll(newc, L"%copyright%", audiofile->GetCopyright());
@@ -1035,7 +1035,7 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 			lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
 			lua_register(L, "_SetTags", lua_caller_settags);
 			lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
-			lua_register(L, "_CheckTagsValues", lua_caller_checktagsvalues);
+			lua_register(L, "_CheckTagValues", lua_caller_checktagvalues);
 			lua_register(L, "_Rename", lua_caller_rename);
 			lua_register(L, "_Move", lua_caller_move);
 			lua_register(L, "_Delete", lua_caller_delete);
@@ -1063,7 +1063,6 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 				// report any errors, if found
 				(*lp)->Log(L"Process (" + wid + L")", L"Error occured", 3);
 				lua_error_reporting(L, s);
-				std::wcout << new_config << std::endl << std::endl;
 			}
 
 			lua_close(L);

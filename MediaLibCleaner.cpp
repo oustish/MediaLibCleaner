@@ -24,10 +24,11 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 	//>> - CASE: This is fast for atmosferic entry. Should we use thrusters to slow?
 	//>> - C: No. I'm gonna use Rangers aerodynamics to save some fuel.
 	//>> - CASE: Air-brake?
-	//>> - C: We wanna get donw fast, don't we?
+	//>> - C: We wanna get down fast, don't we?
 	//>> - B: Actually, we wanna get there in one piece.
 	//>> - C: Hang on.
 	//>> - CASE: Brand, Doyle - get ready.
+	//>>         .  .  .  .  .  .
 	//>>         We should ease.
 	//>> - C: Hand where I can see 'em, CASE. The only time I ever went down was when machine was easing at the wrong time.
 	//>> - CASE: A little caution would...
@@ -119,8 +120,8 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 	this->album = this->fileref->tag()->album();
 	this->genre = this->fileref->tag()->genre();
 	this->comment = this->fileref->tag()->comment();
-	this->track = this->fileref->tag()->track();
-	this->year = this->fileref->tag()->year();
+	this->track = std::to_wstring(this->fileref->tag()->track());
+	this->year = std::to_wstring(this->fileref->tag()->year());
 	// rest of aliases defined below
 
 	// TECHNICAL INFO
@@ -143,6 +144,14 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 
 		std::unique_ptr<TagLib::MPEG::File> temp(new TagLib::MPEG::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_mp3);
+
+		if (!this->taglib_file_mp3->isValid())
+		{
+			this->isInitiated = false;
+			this->filetype = FILETYPE_UNKNOWN;
+			return;
+		}
+
 		this->filetype = FILETYPE_MP3;
 	}
 	else if (this->d_ext == L"ogg" || this->d_ext == L"oga") {
@@ -150,6 +159,14 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 
 		std::unique_ptr<TagLib::Ogg::Vorbis::File> temp(new TagLib::Ogg::Vorbis::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_ogg);
+
+		if (!this->taglib_file_ogg->isValid())
+		{
+			this->isInitiated = false;
+			this->filetype = FILETYPE_UNKNOWN;
+			return;
+		}
+
 		this->filetype = FILETYPE_OGG;
 	}
 	else if (this->d_ext == L"flac") {
@@ -157,11 +174,27 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 
 		std::unique_ptr<TagLib::FLAC::File> temp(new TagLib::FLAC::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_flac);
+
+		if (!this->taglib_file_flac->isValid())
+		{
+			this->isInitiated = false;
+			this->filetype = FILETYPE_UNKNOWN;
+			return;
+		}
+
 		this->filetype = FILETYPE_FLAC;
 	}
 	else if (this->d_ext == L"m4a" || this->d_ext == L"mp4" || this->d_ext == L"aac") {
 		std::unique_ptr<TagLib::MP4::File> temp(new TagLib::MP4::File(TagLib::FileName(this->d_path.c_str())));
 		temp.swap(this->taglib_file_m4a);
+
+		if (!this->taglib_file_m4a->isValid())
+		{
+			this->isInitiated = false;
+			this->filetype = FILETYPE_UNKNOWN;
+			return;
+		}
+
 		this->filetype = FILETYPE_MP4;
 
 		auto audioProp = this->taglib_file_m4a->audioProperties();
@@ -218,7 +251,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 		(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Is FLAC file", 3);
 
 		if (this->taglib_file_flac->hasXiphComment()) {
-			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Reading Xips comments", 3);
+			(*this->logprogram)->Log(L"MediaLibCleaner::File(" + path + L")", L"Reading Xiph comments", 3);
 			this->getFLACXiphTags(this->taglib_file_flac->xiphComment());
 		}
 		else if (this->taglib_file_flac->hasID3v2Tag()) {
@@ -242,7 +275,7 @@ MediaLibCleaner::File::File(std::wstring path, MediaLibCleaner::DFC* dfc, std::u
 	// OTHER
 	this->isInitiated = true;
 	this->d_dfc->IncCount();
-	this->d_counter_dir++;
+	this->d_counter_dir = this->d_dfc->GetCounter();
 
 
 	//>> - B: Very graceful.
@@ -319,23 +352,23 @@ std::wstring MediaLibCleaner::File::GetComment() {
 /**
 * Method allowing to read \%track% tag from an audio file
 *
-* @return Track tag or -1 if file is not audio file
+* @return Track tag or empty if file is not audio file
 */
-int MediaLibCleaner::File::GetTrack() {
+std::wstring MediaLibCleaner::File::GetTrack() {
 	if (this->isInitiated)
-		return this->track;
-	return -1;
+		return this->track.toWString();
+	return L"";
 }
 
 /**
 * Method allowing to read \%year% tag from an audio file
 *
-* @return Year tag or -1 if file is not audio file
+* @return Year tag or empty string if file is not audio file
 */
-int MediaLibCleaner::File::GetYear() {
+std::wstring MediaLibCleaner::File::GetYear() {
 	if (this->isInitiated)
-		return this->year;
-	return -1;
+		return this->year.toWString();
+	return L"";
 }
 
 /**
@@ -794,8 +827,6 @@ void MediaLibCleaner::File::getFLACXiphTags(TagLib::Ogg::XiphComment *xiphcommen
 		this->d_cover_type = L"publisher logo";
 		break;
 	}
-
-	delete picture;
 }
 
 /**
@@ -1259,15 +1290,13 @@ void MediaLibCleaner::File::setXiphTag(TagLib::String value, std::string xiphtag
 void MediaLibCleaner::File::setM4ATag(TagLib::String value, std::string m4atag, TagLib::MP4::Tag *tag)
 {
 	auto props = tag->properties();
-	bool t = false;
-
 	if (value == TagLib::String::null)
 	{
 		props = props.erase(m4atag);
 	}
 	else
 	{
-		t = props.replace(m4atag, TagLib::StringList(value));
+		props.replace(m4atag, TagLib::StringList(value));
 	}
 
 	tag->setProperties(props);
@@ -1377,14 +1406,14 @@ bool MediaLibCleaner::File::SetComment(TagLib::String value) {
 *
 * @return Information if setting tag has completed successfully
 */
-bool MediaLibCleaner::File::SetTrack(TagLib::uint value) {
+bool MediaLibCleaner::File::SetTrack(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		// change inner value
 		this->track = value;
 
 		// change value in file
-		return this->setTagUniversal("TRCK", "TRACKNUMBER", "TRACK", "TRACKNUMBER", std::to_wstring(value));
+		return this->setTagUniversal("TRCK", "TRACKNUMBER", "TRACK", "TRACKNUMBER", value);
 	}
 	return false;
 }
@@ -1396,14 +1425,14 @@ bool MediaLibCleaner::File::SetTrack(TagLib::uint value) {
 *
 * @return Information if setting tag has completed successfully
 */
-bool MediaLibCleaner::File::SetYear(TagLib::uint value) {
+bool MediaLibCleaner::File::SetYear(TagLib::String value) {
 	if (this->isInitiated)
 	{
 		// change inner value
 		this->year = value;
 
 		// change value in file
-		return this->setTagUniversal("TYER", "YEAR", "YEAR", "DATE", std::to_wstring(value));
+		return this->setTagUniversal("TYER", "YEAR", "YEAR", "DATE", value);
 	}
 	return false;
 }
@@ -1961,14 +1990,148 @@ int MediaLibCleaner::File::GetCounterTotal()
  * Method checks if file has given tag
  *
  * @param[in] tag Tag name, without % signs!
- * @param[in] val (Optional) value of the tag
+ * @param[in] val (Optional) values of the tag
  *
- * @return True if tag is present (and has given value), false otherwise
+ * @return True if tag is present (and has one of given values), false otherwise
  */
+bool MediaLibCleaner::File::HasTag(std::wstring tag, std::vector<std::wstring> val)
+{
+	TagLib::String curr_val;
+
+	if (tag == L"artist")
+		curr_val = this->artist;
+	else if (tag == L"title")
+		curr_val = this->title;
+	else if (tag == L"album")
+		curr_val = this->album;
+	else if (tag == L"comment")
+		curr_val = this->comment;
+	else if (tag == L"genre")
+		curr_val = this->genre;
+	else if (tag == L"year")
+		curr_val = this->year;
+	else if (tag == L"track")
+		curr_val = this->track;
+	else if (tag == L"albumartist")
+		curr_val = this->albumartist;
+	else if (tag == L"bpm")
+		curr_val = this->bpm;
+	else if (tag == L"copyright")
+		curr_val = this->copyright;
+	else if (tag == L"language")
+		curr_val = this->language;
+	else if (tag == L"length")
+		curr_val = this->length;
+	else if (tag == L"mood")
+		curr_val = this->mood;
+	else if (tag == L"origartist")
+		curr_val = this->origartist;
+	else if (tag == L"origalbum")
+		curr_val = this->origalbum;
+	else if (tag == L"origfilename")
+		curr_val = this->origfilename;
+	else if (tag == L"origyear")
+		curr_val = this->origyear;
+	else if (tag == L"publisher")
+		curr_val = this->publisher;
+	else if (tag == L"unsyncedlyrics")
+		curr_val = this->unsyncedlyrics;
+	else if (tag == L"www")
+		curr_val = this->www;
+
+	if (curr_val == TagLib::String::null || curr_val == L"")
+	{
+		(*this->logalert)->Log(this->d_path, L"File doesn't have specified tag or tag is empty: '" + tag + L"'");
+		return false;
+	}
+
+	if (val.size())
+	{
+		bool retval = false;
+		for (auto it = val.begin(); it != val.end(); ++it)
+		{
+			if (curr_val.toWString() == *it)
+			{
+				retval = true;
+				break;
+			}
+		}
+
+		if (!retval)
+		{
+			(*this->logalert)->Log(this->d_path, L"Tag '" + tag + L"' doesn't have any of the required value; current value: '" + curr_val.toWString() + L"'");
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+* Method checks if file has given tag
+*
+* @param[in] tag Tag name, without % signs!
+* @param[in] val (Optional) value of the tag
+*
+* @return True if tag is present (and has given value), false otherwise
+*/
 bool MediaLibCleaner::File::HasTag(std::wstring tag, TagLib::String val)
 {
-	// debug
-	(*this->logalert)->Log(L"File::HasTag(" + this->d_path + L")", L"Cheking for tag: '" + tag + L"' with possible value: '" + val.toWString() + L"'");
+	TagLib::String curr_val;
+
+	if (tag == L"artist")
+		curr_val = this->artist;
+	else if (tag == L"title")
+		curr_val = this->title;
+	else if (tag == L"album")
+		curr_val = this->album;
+	else if (tag == L"comment")
+		curr_val = this->comment;
+	else if (tag == L"genre")
+		curr_val = this->genre;
+	else if (tag == L"year")
+		curr_val = this->year;
+	else if (tag == L"track")
+		curr_val = this->track;
+	else if (tag == L"albumartist")
+		curr_val = this->albumartist;
+	else if (tag == L"bpm")
+		curr_val = this->bpm;
+	else if (tag == L"copyright")
+		curr_val = this->copyright;
+	else if (tag == L"language")
+		curr_val = this->language;
+	else if (tag == L"length")
+		curr_val = this->length;
+	else if (tag == L"mood")
+		curr_val = this->mood;
+	else if (tag == L"origartist")
+		curr_val = this->origartist;
+	else if (tag == L"origalbum")
+		curr_val = this->origalbum;
+	else if (tag == L"origfilename")
+		curr_val = this->origfilename;
+	else if (tag == L"origyear")
+		curr_val = this->origyear;
+	else if (tag == L"publisher")
+		curr_val = this->publisher;
+	else if (tag == L"unsyncedlyrics")
+		curr_val = this->unsyncedlyrics;
+	else if (tag == L"www")
+		curr_val = this->www;
+
+	if (curr_val == TagLib::String::null || curr_val == L"")
+	{
+		(*this->logalert)->Log(this->d_path, L"File doesn't have specified tag or tag is empty: '" + tag + L"'");
+		return false;
+	}
+
+	if (val != TagLib::String::null && curr_val != val)
+	{
+		(*this->logalert)->Log(this->d_path, L"Tag '" + tag + L"' doesn't have required value: '" + val.toWString() + L"'");
+		return false;
+	}
+
 	return true;
 }
 
@@ -1981,13 +2144,23 @@ bool MediaLibCleaner::File::HasTag(std::wstring tag, TagLib::String val)
 */
 bool MediaLibCleaner::File::Rename(std::wstring nname)
 {
-	// debug
-	(*this->logalert)->Log(L"File::Rename(" + this->d_path + L")", L"Reanming file to: '" + nname + L"'");
+	(*this->logalert)->Log(this->d_path, L"Renaming file to: '" + nname + L"'");
+
+	boost::filesystem::wpath loc_path = this->d_path, new_loc_path;
+
+	std::wstring nn = loc_path.parent_path().generic_wstring() + L"/" + nname;
+	new_loc_path = nn;
+
+	boost::filesystem::rename(loc_path, new_loc_path);
+
+	this->d_path = new_loc_path.generic_wstring();
+
 	return true;
 }
 
 /**
-* Method for moving file to new destination in the user filesystem
+* Method for moving file to new destination in the user filesystem.
+* Be aware that moving file will invalidate DFC counter inside!
 *
 * @param[in] nloc New file location
 *
@@ -1995,8 +2168,16 @@ bool MediaLibCleaner::File::Rename(std::wstring nname)
 */
 bool MediaLibCleaner::File::Move(std::wstring nloc)
 {
-	// debug
-	(*this->logalert)->Log(L"File::Move(" + this->d_path + L")", L"Moving file to: '" + nloc + L"'");
+	(*this->logalert)->Log(this->d_path, L"Moving file to: '" + nloc + L"'");
+
+	boost::filesystem::path loc_path = this->d_path;
+	boost::filesystem::wpath new_loc_path = nloc;
+
+	boost::filesystem::rename(loc_path, new_loc_path);
+
+	this->d_path = new_loc_path.generic_wstring();
+	this->d_dfc = nullptr;
+
 	return true;
 }
 
@@ -2007,9 +2188,23 @@ bool MediaLibCleaner::File::Move(std::wstring nloc)
 */
 bool MediaLibCleaner::File::Delete()
 {
-	// debug
-	(*this->logalert)->Log(L"File::Delete(" + this->d_path + L")", L"Deleting file");
-	return true;
+	(*this->logalert)->Log(this->d_path, L"Deleting file");
+
+	boost::filesystem::wpath loc_path = this->d_path;
+
+	if (boost::filesystem::exists(loc_path))
+	{
+		boost::filesystem::remove(loc_path);
+		this->isInitiated = false;
+
+		if (this->filetype != FILETYPE_UNKNOWN)
+		{
+			this->d_dfc->DecCount();
+		}
+		return true;
+	}
+
+	return false;
 }
 
 /**
@@ -2023,6 +2218,12 @@ bool MediaLibCleaner::File::Delete()
  */
 bool MediaLibCleaner::File::SetTag(std::wstring key, TagLib::String val)
 {
+	bool locHasChanged = this->hasChanged;
+
+	this->hasChanged = true;
+
+	(*this->logalert)->Log(this->d_path, L"Setting tag '" + key + L"' to new value: '" + val.toWString() + L"'");
+
 	if (key == L"artist")
 	{
 		return this->SetArtist(val);
@@ -2095,22 +2296,7 @@ bool MediaLibCleaner::File::SetTag(std::wstring key, TagLib::String val)
 	{
 		return this->SetWWW(val);
 	}
-	return false;
-}
-
-/**
-* Method for easy setting tag in the audio file using already existing methods.
-* This version is for TagLib::uint type of value variable
-*
-* @param[in] key  Tag name (wthout \% signs)
-* @param[in] val  New tag value
-*
-* @return True if tag setting operation succeded, false otherwise
-*/
-bool MediaLibCleaner::File::SetTag(std::wstring key, TagLib::uint val)
-{
-
-	if (key == L"track")
+	else if (key == L"track")
 	{
 		return this->SetTrack(val);
 	}
@@ -2118,6 +2304,8 @@ bool MediaLibCleaner::File::SetTag(std::wstring key, TagLib::uint val)
 	{
 		return this->SetYear(val);
 	}
+
+	this->hasChanged = locHasChanged;
 	return false;
 }
 
@@ -2147,7 +2335,7 @@ MediaLibCleaner::DFC* MediaLibCleaner::File::GetDFC() {
  */
 void MediaLibCleaner::File::save()
 {
-	if (this->isInitiated)
+	if (this->isInitiated && this->hasChanged && boost::filesystem::exists(this->d_path))
 	{
 		(*this->logprogram)->Log(L"MediaLibCleaner::save(" + this->d_path + L")", L"Writing all changes to file", 3);
 
@@ -2478,6 +2666,15 @@ std::wstring MediaLibCleaner::DFC::GetPath() {
 void MediaLibCleaner::DFC::IncCount() {
 	(*this->logprogram)->Log(L"MediaLibCleaner::DFC::IncCount", L"Incrementing DFC count for " + this->path, 3);
 	this->count++;
+}
+
+/**
+* Method to decrease counter inside given DFC object.
+* Using method instead of operator overloading because operator overloading created unwanted results.
+*/
+void MediaLibCleaner::DFC::DecCount() {
+	(*this->logprogram)->Log(L"MediaLibCleaner::DFC::DecCount", L"Incrementing DFC count for " + this->path, 3);
+	this->count--;
 }
 
 

@@ -14,7 +14,7 @@
 int lua_IsAudioFile(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_SetTags(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_SetRequiredTags(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
-int lua_CheckTagsValues(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_CheckTagValues(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_Rename(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_Move(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_Delete(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);

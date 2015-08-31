@@ -52,18 +52,10 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<
 
 	for (int i = 1; i <= n; i += 2) {
 		std::wstring tag = s2ws(lua_tostring(L, i));
-		TagLib::uint val_uint = 0;
-		TagLib::String val_str;
-		if (tag == L"track" || tag == L"year")
-		{
-			val_uint = static_cast<TagLib::uint>(lua_tonumber(L, i + 1));
-			audiofile->SetTag(tag, val_uint);
-		}
-		else
-		{
-			val_str = s2ws(lua_tostring(L, i + 1));
-			audiofile->SetTag(tag, val_str);
-		}
+		TagLib::String val;
+
+		val = s2ws(lua_tostring(L, i + 1));
+		audiofile->SetTag(tag, val);
 	}
 
 	// return - indicates function completed it's run
@@ -86,16 +78,20 @@ int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile, std::uni
 	// input parameters are simple tag names, like this: "artist"
 	// note lack of % signs at the beginning and end
 
+	bool retval = true;
 	for (int i = 1; i <= n; i++)
 	{
 		std::string tag = lua_tostring(L, i);
 		if (tag == "") continue;
 
-		audiofile->HasTag(s2ws(lua_tostring(L, i)));
+		if ( !audiofile->HasTag( s2ws( lua_tostring(L, i) ) ) )
+		{
+			retval = false;
+		}
 	}
 
 	// indicates function completed it's run
-	lua_pushboolean(L, true);
+	lua_pushboolean(L, retval);
 	return 1;
 }
 
@@ -109,21 +105,24 @@ int lua_SetRequiredTags(lua_State *L, MediaLibCleaner::File* audiofile, std::uni
 *
 * @return Number of output arguments (for lua_register)
 */
-int lua_CheckTagsValues(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
+int lua_CheckTagValues(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
 	int n = lua_gettop(L) - 1; // argc for function
 
-	if (n % 2 == 1 && n > 0) { // requiers even, positive amount of arguments
+	if (n < 2) { // requiers even, positive amount of arguments
 		lua_pushboolean(L, false);
-		(*lp)->Log(L"lua_CheckTagsValues(" + audiofile->GetPath() + L")", L"Function expects even and positive amount of argument pairs [tag, value] (" + std::to_wstring(n) + L" given)", 2);
+		(*lp)->Log(L"lua_CheckTagsValues(" + audiofile->GetPath() + L")", L"Function expects at least 2 arguments in given format: [tag, value1, value2, ...] (" + std::to_wstring(n) + L" given)", 2);
 		return 1;
 	}
 
-	for (int i = 1; i <= n; i += 2) {
-		audiofile->HasTag(s2ws(lua_tostring(L, i)), s2ws(lua_tostring(L, i + 1)));
+	std::wstring tag = s2ws(lua_tostring(L, 1));
+	std::vector< std::wstring > val;
+	for (int i = 2; i <= n; i++)
+	{
+		val.push_back(s2ws(lua_tostring(L, i)));
 	}
 
 	// indicates function completed it's run
-	lua_pushboolean(L, true);
+	lua_pushboolean(L, audiofile->HasTag(tag, val));
 	return 1;
 }
 

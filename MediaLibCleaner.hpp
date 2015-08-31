@@ -197,6 +197,7 @@ namespace MediaLibCleaner
 		std::wstring GetPath();
 
 		void IncCount();
+		void DecCount();
 	};
 
 	/**
@@ -232,11 +233,11 @@ namespace MediaLibCleaner
 		/**
 		* An TagLib::uint object containing \%track% number written in audio file
 		*/
-		TagLib::uint track;
+		TagLib::String track;
 		/**
 		* An TagLib::uint object containing release \%year% written in audio file
 		*/
-		TagLib::uint year;
+		TagLib::String year;
 		/**
 		* An TagLib::String object containing \%albumartist% written in audio file
 		*/
@@ -441,6 +442,11 @@ namespace MediaLibCleaner
 		*/
 		std::unique_ptr<LogProgram>* logprogram;
 
+		/**
+		 * Value indicates if there was any changes made to the file itself
+		 */
+		bool hasChanged = false;
+
 		bool setTagUniversal(std::string id3tag, std::string xiphtag, std::string apetag, std::string mp4tag, TagLib::String value = TagLib::String::null);
 
 		void getID3v2Tags(TagLib::ID3v2::Tag*);
@@ -468,8 +474,8 @@ namespace MediaLibCleaner
 		std::wstring GetAlbum();
 		std::wstring GetGenre();
 		std::wstring GetComment();
-		int GetTrack();
-		int GetYear();
+		std::wstring GetTrack();
+		std::wstring GetYear();
 		std::wstring GetAlbumArtist();
 		std::wstring GetBPM();
 		std::wstring GetCopyright();
@@ -489,8 +495,8 @@ namespace MediaLibCleaner
 		bool SetAlbum(TagLib::String value);
 		bool SetGenre(TagLib::String value);
 		bool SetComment(TagLib::String value);
-		bool SetTrack(TagLib::uint value);
-		bool SetYear(TagLib::uint value);
+		bool SetTrack(TagLib::String value);
+		bool SetYear(TagLib::String value);
 		bool SetAlbumArtist(TagLib::String value);
 		bool SetBPM(TagLib::String value);
 		bool SetCopyright(TagLib::String value);
@@ -550,11 +556,11 @@ namespace MediaLibCleaner
 
 		// methods for lua processor manipulations
 		bool HasTag(std::wstring tag, TagLib::String val = TagLib::String::null);
+		bool HasTag(std::wstring tag, std::vector<std::wstring> val);
 		bool Rename(std::wstring);
 		bool Move(std::wstring);
 		bool Delete();
 		bool SetTag(std::wstring, TagLib::String val = TagLib::String::null);
-		bool SetTag(std::wstring, TagLib::uint val = 0);
 
 		bool IsInitiated();
 		DFC* GetDFC();
