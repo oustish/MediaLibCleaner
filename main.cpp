@@ -77,18 +77,33 @@ static int lua_caller_isaudiofile(lua_State *L) {
 }
 
 /**
- * Function calling lua_SetTags() function. This function is registered within lua processor!
- *
- * @param[in] L lua_State object to config file
- *
- * @return Number of output arguments on stack for lua processor
- */
+* Function calling lua_SetTags() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
 static int lua_caller_settags(lua_State *L) {
 	lua_getglobal(L, "__thread");
 	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
 	return lua_SetTags(L, cfile, &programlog, &alertlog);
+}
+
+/**
+* Function calling lua_RemoveTags() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_removetags(lua_State *L) {
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_RemoveTags(L, cfile, &programlog, &alertlog);
 }
 
 /**
@@ -171,6 +186,22 @@ static int lua_caller_delete(lua_State *L)
 	return lua_Delete(L, cfile, &programlog, &alertlog);
 }
 
+/**
+* Function calling lua_Log() function. This function is registered within lua processor!
+*
+* @param[in] L lua_State object to config file
+*
+* @return Number of output arguments on stack for lua processor
+*/
+static int lua_caller_log(lua_State *L)
+{
+	lua_getglobal(L, "__thread");
+	int thd = static_cast<int>(lua_tonumber(L, -1));
+	auto cfile = current_file_thd[thd];
+
+	return lua_Log(L, cfile, &programlog, &alertlog);
+}
+
 
 
 
@@ -212,420 +243,26 @@ int main(int argc, char *argv[]) {
 	// it wasn't so easy to find though...
 	setlocale(LC_ALL, "");
 
-	namespace po = boost::program_options;
-
-	po::options_description generic("Command-line parameters");
-	generic.add_options()
-		("help", "produce this help message")
-		("config", po::value<std::string>(), "path to config file")
-		("force-lua-config", "forces program to evaluate config file as LUA file, ignoring file extension")
-		("force-ini-config", "forces program to evaluate config file as INI file, ignoring file extension")
-	;
-
-	po::options_description system("System options");
-	system.add_options()
-		("path", po::value<std::string>(), "path to directory")
-		("alert-log", po::value<std::string>(), "path to alert log file or '-' if messages should be redirected to stdout")
-		("error-log", po::value<std::string>(), "path to error log file or '-' if messages should be redirected to stderr")
-		("error-level", po::value<int>()->default_value(2), "minimum message level to be logged; 3 - debug, 2 - warnings, 1 - critical errors, 0 - nothing")
-		("max-threads", po::value<int>()->default_value(0), "maximum number of threads to be used (0 - unlimited)")
-		("tasks", po::value< std::vector< std::string > >(), "list of tasks to be performed")
-	;
-
-	po::options_description nnrules("Names normalization rules");
-	nnrules.add_options()
-		("nn-rules", po::value<int>()->default_value(0), "number of names normalization rules; max. is 20")
-		("nn-rule1-expression", po::value<std::string>()->default_value("true"), "first rule if() expression in MLC special conditional format; tag aliases supported; number can be changed to up to '--nn-rules' value")
-		("nn-rule1-new-name", po::value<std::string>(), "new name for file if first if() statement results in true; tag aliases supported; number can be changed to up to '--nn-rules' value")
-	;
-
-	po::options_description nnrules_hidden("Hidden names normalization rules");
-	nnrules_hidden.add_options()
-		("nn-rule2-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule2-new-name", po::value<std::string>(), "")
-
-		("nn-rule3-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule3-new-name", po::value<std::string>(), "")
-
-		("nn-rule4-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule4-new-name", po::value<std::string>(), "")
-
-		("nn-rule5-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule5-new-name", po::value<std::string>(), "")
-
-		("nn-rule6-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule6-new-name", po::value<std::string>(), "")
-
-		("nn-rule7-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule7-new-name", po::value<std::string>(), "")
-
-		("nn-rule8-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule8-new-name", po::value<std::string>(), "")
-
-		("nn-rule9-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule9-new-name", po::value<std::string>(), "")
-
-		("nn-rule10-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule10-new-name", po::value<std::string>(), "")
-
-		("nn-rule11-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule11-new-name", po::value<std::string>(), "")
-
-		("nn-rule12-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule12-new-name", po::value<std::string>(), "")
-
-		("nn-rule13-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule13-new-name", po::value<std::string>(), "")
-
-		("nn-rule14-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule14-new-name", po::value<std::string>(), "")
-
-		("nn-rule15-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule15-new-name", po::value<std::string>(), "")
-
-		("nn-rule16-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule16-new-name", po::value<std::string>(), "")
-		
-		("nn-rule17-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule17-new-name", po::value<std::string>(), "")
-
-		("nn-rule18-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule18-new-name", po::value<std::string>(), "")
-
-		("nn-rule19-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule19-new-name", po::value<std::string>(), "")
-
-		("nn-rule20-expression", po::value<std::string>()->default_value("true"), "")
-		("nn-rule20-new-name", po::value<std::string>(), "")
-	;
-
-	po::options_description rtrules("Required tags rules"), rtrules_hidden("Required tags rules (hidden)");
-	rtrules.add_options()
-		("rt-rules", po::value<int>()->default_value(0), "number of required tags rules; max. is 20")
-		("rt-rule1-tags", po::value< std::vector< std::string > >(), "list of tags required to be set; tags cannot be used with % signs around the tag name; number can be changed up to '--rt-rules' value")
-		("rt-rule1-value", po::value<std::string>(), "value that needs to be set for tags defined for this rule; tag aliasses supported; number can be changed up to '--rt-rules' value")
-	;
-
-	rtrules_hidden.add_options()
-		("rt-rule2-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule2-value", po::value<std::string>(), "")
-
-		("rt-rule3-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule3-value", po::value<std::string>(), "")
-
-		("rt-rule4-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule4-value", po::value<std::string>(), "")
-
-		("rt-rule5-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule5-value", po::value<std::string>(), "")
-
-		("rt-rule6-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule6-value", po::value<std::string>(), "")
-
-		("rt-rule7-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule7-value", po::value<std::string>(), "")
-
-		("rt-rule8-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule8-value", po::value<std::string>(), "")
-
-		("rt-rule9-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule9-value", po::value<std::string>(), "")
-
-		("rt-rule10-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule10-value", po::value<std::string>(), "")
-
-		("rt-rule11-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule11-value", po::value<std::string>(), "")
-
-		("rt-rule12-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule12-value", po::value<std::string>(), "")
-
-		("rt-rule13-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule13-value", po::value<std::string>(), "")
-
-		("rt-rule14-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule14-value", po::value<std::string>(), "")
-
-		("rt-rule15-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule15-value", po::value<std::string>(), "")
-
-		("rt-rule16-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule16-value", po::value<std::string>(), "")
-
-		("rt-rule17-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule17-value", po::value<std::string>(), "")
-
-		("rt-rule18-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule18-value", po::value<std::string>(), "")
-
-		("rt-rule19-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule19-value", po::value<std::string>(), "")
-
-		("rt-rule20-tags", po::value< std::vector< std::string > >(), "")
-		("rt-rule20-value", po::value<std::string>(), "")
-		;
-
-	po::options_description tnrules("Tags normalization rules"), tnrules_hidden("Tags normalization rules (hidden)");
-	tnrules.add_options()
-		("tn-rules", po::value<int>()->default_value(0), "number of tags normalization rules; max. is 20")
-		("tn-rule1-tags", po::value< std::vector< std::string > >(), "list of tags for first rule expression and action; tags cannot be used with % signs around the tag name; number can be changed up to '--tn-rules' value")
-		("tn-rule1-action", po::value<std::string>()->default_value("nothing"), "action taken on tags defined for rule if if() expression evaluates to true; number can be changed up to '--tn-rules' value")
-		("tn-rule1-new-value", po::value<std::string>(), "new value for tags defined for this rule if if() expression evaluate to true and action is 'set' or 'replace'; tag aliasses supported; number can be changed up to '--tn-rules' value")
-		("tn-rule1-expression", po::value<std::string>()->default_value("true"), "first rule if() expression; tag aliasses supported; number can be changed up to '--tn-rules' value")
-	;
-
-	tnrules_hidden.add_options()
-		("tn-rule2-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule2-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule2-new-value", po::value<std::string>(), "")
-		("tn-rule2-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule3-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule3-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule3-new-value", po::value<std::string>(), "")
-		("tn-rule3-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule4-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule4-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule4-new-value", po::value<std::string>(), "")
-		("tn-rule4-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule5-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule5-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule5-new-value", po::value<std::string>(), "")
-		("tn-rule5-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule6-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule6-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule6-new-value", po::value<std::string>(), "")
-		("tn-rule6-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule7-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule7-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule7-new-value", po::value<std::string>(), "")
-		("tn-rule7-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule8-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule8-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule8-new-value", po::value<std::string>(), "")
-		("tn-rule8-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule9-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule9-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule9-new-value", po::value<std::string>(), "")
-		("tn-rule9-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule10-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule10-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule10-new-value", po::value<std::string>(), "")
-		("tn-rule10-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule11-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule11-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule11-new-value", po::value<std::string>(), "")
-		("tn-rule11-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule12-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule12-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule12-new-value", po::value<std::string>(), "")
-		("tn-rule12-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule13-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule13-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule13-new-value", po::value<std::string>(), "")
-		("tn-rule13-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule14-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule14-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule14-new-value", po::value<std::string>(), "")
-		("tn-rule14-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule15-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule15-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule15-new-value", po::value<std::string>(), "")
-		("tn-rule15-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule16-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule16-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule16-new-value", po::value<std::string>(), "")
-		("tn-rule16-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule17-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule17-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule17-new-value", po::value<std::string>(), "")
-		("tn-rule17-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule18-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule18-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule18-new-value", po::value<std::string>(), "")
-		("tn-rule18-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule19-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule19-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule19-new-value", po::value<std::string>(), "")
-		("tn-rule19-expression", po::value<std::string>()->default_value("true"), "")
-
-		("tn-rule20-tags", po::value< std::vector< std::string > >(), "")
-		("tn-rule20-action", po::value<std::string>()->default_value("nothing"), "")
-		("tn-rule20-new-value", po::value<std::string>(), "")
-		("tn-rule20-expression", po::value<std::string>()->default_value("true"), "")
-		;
-
-	po::options_description whitelist("Files whitelist"), whitelist_hidden("Files whitelist (hidden)");
-	whitelist.add_options()
-		("wh-rules", po::value<int>()->default_value(0), "number of whitelist rules; max. is 20")
-		("wh-rule1-files", po::value< std::vector< std::string > >(), "list of files to be whitelisted if if() expression evaluates to true; tag aliasses supported; number can be changed up to '--wh-rules' value")
-		("wh-rule1-expression", po::value<std::string>()->default_value("true"), "first whitelistr rule if() expression; tag aliasses supported; number can be changed up to '--wh-rules' value")
-	;
-
-	whitelist_hidden.add_options()
-		("wh-rule2-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule2-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule3-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule3-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule4-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule4-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule5-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule5-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule6-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule6-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule7-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule7-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule8-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule8-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule9-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule9-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule10-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule10-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule11-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule11-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule12-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule12-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule13-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule13-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule14-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule14-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule15-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule15-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule16-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule16-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule17-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule17-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule18-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule18-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule19-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule19-expression", po::value<std::string>()->default_value("true"), "")
-
-		("wh-rule20-files", po::value< std::vector< std::string > >(), "")
-		("wh-rule20-expression", po::value<std::string>()->default_value("true"), "")
-	;
-
-	po::options_description blacklist("Files blacklist"), blacklist_hidden("Files blacklist (hidden)");
-	blacklist.add_options()
-		("bl-rules", po::value<int>(), "number of blacklist rules; max. is 20")
-		("bl-rule1-files", po::value< std::vector< std::string > >(), "list of files to be blacklisted if if() expression evaluates to true; tag aliasses supported; number can be changed up to '--bl-rules' value")
-		("bl-rule1-expression", po::value<std::string>()->default_value("true"), "first blacklist rule if() expression; tag aliasses supported; number can be changed up to '--bl-rules' value")
-	;
-
-	blacklist_hidden.add_options()
-		("bl-rule2-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule2-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule3-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule3-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule4-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule4-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule5-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule5-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule6-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule6-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule7-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule7-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule8-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule8-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule9-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule9-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule10-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule10-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule11-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule11-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule12-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule12-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule13-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule13-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule14-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule14-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule15-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule15-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule16-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule16-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule17-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule17-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule18-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule18-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule19-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule19-expression", po::value<std::string>()->default_value("true"), "")
-
-		("bl-rule20-files", po::value< std::vector< std::string > >(), "")
-		("bl-rule20-expression", po::value<std::string>()->default_value("true"), "")
-		;
-
-	po::options_description cmdline_opts_desc, cmdline_opts;
-	cmdline_opts_desc.add(generic).add(system).add(nnrules).add(rtrules).add(tnrules).add(whitelist).add(blacklist);
-	cmdline_opts.add(generic).add(system).add(nnrules).add(nnrules_hidden).add(rtrules).add(rtrules_hidden).add(tnrules).add(tnrules_hidden).add(whitelist).add(whitelist_hidden).add(blacklist).add(blacklist_hidden);
-
-	po::variables_map vm;
-	po::store(po::parse_command_line(argc, argv, cmdline_opts), vm);
-	po::notify(vm);
-
-	if (vm.count("help"))
+	
+	// get cmd line parameters figured out
+	std::unique_ptr<MediaLibCleaner::ConfigFile::ConfigFileReader> cfg_reader(new MediaLibCleaner::ConfigFile::ConfigFileReader(argc, argv));
+
+	// display help message if needed
+	if (cfg_reader->help())
 	{
-		std::cout << cmdline_opts_desc << std::endl;
+		std::cerr << cfg_reader->usage() << std::endl;
 		return 7;
 	}
 
+	// if not, try to figure out which config file to use
 	std::wstring wconfig;
-	if (vm.count("config"))
+	if (cfg_reader->configFile() && cfg_reader->cfgType() == 0) // LUA
 	{
-		std::string rpath = vm["config"].as<std::string>();
+		std::string rpath = cfg_reader->configFilePath();
 		// check if path exists, then continue
 		if (!boost::filesystem::exists(rpath) || !boost::filesystem::is_regular_file(rpath)) {
-			std::wcout << L"Config LUA file does not exists in the given path. Please make sure file exists and path given is correct." << std::endl;
-			std::wcout << L"Usage: mlc.exe --config <path-to-config-lua-file>" << std::endl;
-			programlog->Log(L"Main", L"Config LUA file does not exists in the given path. Please make sure file exists and path given is correct.", 1);
+			std::wcout << L"ERROR: Config LUA file does not exists in the given path. Please make sure file exists and path given is correct." << std::endl;
+			std::cout << cfg_reader->usage() << std::endl;
 			return 6;
 		}
 
@@ -636,9 +273,17 @@ int main(int argc, char *argv[]) {
 		wss << wfile.rdbuf();
 		wconfig = wss.str();
 	}
-	else
+	else if(cfg_reader->configFile() && cfg_reader->cfgType() == 1) // INI
 	{
-		std::cout << cmdline_opts_desc << std::endl;
+		
+	}
+	else if(cfg_reader->cfgType() == 2) // CMD LINE ARGS
+	{
+		wconfig = cfg_reader->generate();
+	}
+	else // OOPS, NO MATCHES
+	{
+		std::cerr << cfg_reader->usage() << std::endl;
 		return 7;
 	}
 
@@ -664,11 +309,13 @@ int main(int argc, char *argv[]) {
 	// register C functions in lua processor
 	lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
 	lua_register(L, "_SetTags", lua_caller_settags);
+	lua_register(L, "_RemoveTags", lua_caller_removetags);
 	lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
 	lua_register(L, "_CheckTagValues", lua_caller_checktagvalues);
 	lua_register(L, "_Rename", lua_caller_rename);
 	lua_register(L, "_Move", lua_caller_move);
 	lua_register(L, "_Delete", lua_caller_delete);
+	lua_register(L, "_Log", lua_caller_log);
 
 	// _action == System
 	// as we need these informations once at the beginning
@@ -850,7 +497,6 @@ int main(int argc, char *argv[]) {
 	MediaLibCleaner::FilesAggregator *d = filesAggregator.release();
 	delete d;
 
-
 	programlog->Log(L"Main", L"Program finished", 3);
 
 	return 0;
@@ -886,103 +532,7 @@ void lua_error_reporting(lua_State *L, int status) {
 
 
 
-/**
- * Function replacing every occurence of all aliases with proper tag values read from audio file.
- *
- * Function that will replace all aliases (for example \%artist%) with proper values from each audio file
- * given as second parameter.
- *
- * @see http://flute.eti.pg.gda.pl/trac/student-projects/wiki/MediaLibCleaner/Aliases for aliases definitions
- *
- * @param[in]	wcfg	   String with config file content. Any format is accepted.
- * @param[in]	audiofile  std::unique_ptr to MediaLibCleaner::AudioFile object representing current file
- *
- * @return String containing config file with aliases replaced
- */
-std::wstring ReplaceAllAliasOccurences(std::wstring& wcfg, MediaLibCleaner::File* audiofile) {
-	std::wstring newc = wcfg;
 
-	// copy original path to not confuse rest of the program
-	std::wstring lpath = audiofile->GetPath();
-
-	// do the magic!
-	// SONG DATA
-	replaceAll(newc, L"%artist%", audiofile->GetArtist());
-	replaceAll(newc, L"%title%", audiofile->GetTitle());
-	replaceAll(newc, L"%album%", audiofile->GetAlbum());
-	replaceAll(newc, L"%genre%", audiofile->GetGenre());
-	replaceAll(newc, L"%comment%", audiofile->GetComment());
-	replaceAll(newc, L"%track%", audiofile->GetTrack());
-	replaceAll(newc, L"%year%", audiofile->GetYear());
-	replaceAll(newc, L"%albumartist%", audiofile->GetAlbumArtist());
-	replaceAll(newc, L"%bpm%", audiofile->GetBPM());
-	replaceAll(newc, L"%copyright%", audiofile->GetCopyright());
-	replaceAll(newc, L"%language%", audiofile->GetLanguage());
-	replaceAll(newc, L"%length%", audiofile->GetTagLength());
-	replaceAll(newc, L"%mood%", audiofile->GetMood());
-	replaceAll(newc, L"%origalbum%", audiofile->GetOrigAlbum());
-	replaceAll(newc, L"%origartist%", audiofile->GetOrigArtist());
-	replaceAll(newc, L"%origfilename%", audiofile->GetOrigFilename());
-	replaceAll(newc, L"%origyear%", audiofile->GetOrigYear());
-	replaceAll(newc, L"%publisher%", audiofile->GetPublisher());
-	replaceAll(newc, L"%unsyncedlyrics%", audiofile->GetLyricsUnsynced());
-	replaceAll(newc, L"%www%", audiofile->GetWWW());
-
-	// TECHNICAL INFO
-	replaceAll(newc, L"%_bitrate%", std::to_wstring(audiofile->GetBitrate()));
-	replaceAll(newc, L"%_codec%", audiofile->GetCodec());
-	replaceAll(newc, L"%_cover_mimetype%", audiofile->GetCoverMimetype());
-	replaceAll(newc, L"%_cover_size%", std::to_wstring(audiofile->GetCoverSize()));
-	replaceAll(newc, L"%_cover_type%", audiofile->GetCoverType());
-	replaceAll(newc, L"%_covers%", std::to_wstring(audiofile->GetCovers()));
-	replaceAll(newc, L"%_length%", audiofile->GetLengthAsString());
-	replaceAll(newc, L"%_length_seconds%", std::to_wstring(audiofile->GetLength()));
-	replaceAll(newc, L"%_channels%", std::to_wstring(audiofile->GetChannels()));
-	replaceAll(newc, L"%_samplerate%", std::to_wstring(audiofile->GetSampleRate()));
-
-
-	// PATH INFO
-	replaceAll(newc, L"%_directory%", audiofile->GetDirectory());
-	replaceAll(newc, L"%_ext%", audiofile->GetExt());
-	replaceAll(newc, L"%_filename%", audiofile->GetFilename());
-	replaceAll(newc, L"%_filename_ext%", audiofile->GetFilenameExt());
-	replaceAll(newc, L"%_folderpath%", audiofile->GetFolderPath());
-	replaceAll(newc, L"%_parent_dir%", audiofile->GetParentDir());
-	replaceAll(newc, L"%_path%", audiofile->GetPath());
-#ifdef WIN32
-	replaceAll(newc, L"%_volume%", audiofile->GetVolume());
-#endif
-	boost::filesystem::path loc_path = path;
-	replaceAll(newc, L"%_workingdir%", loc_path.filename().generic_wstring());
-	replaceAll(newc, L"%_workingpath%", loc_path.generic_wstring());
-
-
-	// FILES PROPERTIES
-	replaceAll(newc, L"%_file_create_date%", audiofile->GetFileCreateDate());
-	replaceAll(newc, L"%_file_create_datetime%", audiofile->GetFileCreateDatetime());
-	replaceAll(newc, L"%_file_create_datetime_raw%", std::to_wstring(audiofile->GetFileCreateDatetimeRaw()));
-	replaceAll(newc, L"%_file_mod_date%", audiofile->GetFileModDate());
-	replaceAll(newc, L"%_file_mod_datetime%", audiofile->GetFileModDatetime());
-	replaceAll(newc, L"%_file_mod_datetime_raw%", std::to_wstring(audiofile->GetFileModDatetimeRaw()));
-	replaceAll(newc, L"%_file_size%", audiofile->GetFileSize());
-	replaceAll(newc, L"%_file_size_bytes%", std::to_wstring(audiofile->GetFileSizeBytes()));
-	replaceAll(newc, L"%_file_size_kb%", audiofile->GetFileSizeKB());
-	replaceAll(newc, L"%_file_size_mb%", audiofile->GetFileSizeMB());
-
-
-	// SYSTEM DATA
-	replaceAll(newc, L"%_counter_dir%", std::to_wstring(audiofile->GetCounterDir()));
-	replaceAll(newc, L"%_counter_total%", std::to_wstring(total_files));
-	replaceAll(newc, L"%_date%", get_date_iso_8601_wide(datetime_raw));
-	replaceAll(newc, L"%_datetime%", get_date_rfc_2822_wide(datetime_raw));
-	replaceAll(newc, L"%_datetime_raw%", std::to_wstring(datetime_raw));
-	replaceAll(newc, L"%_total_files%", std::to_wstring(total_files));
-	replaceAll(newc, L"%_total_files_dir%", std::to_wstring(audiofile->GetCounterTotal()));
-
-	replaceAll(newc, L"\\", L"\\\\");
-
-	return newc;
-}
 
 /**
 * Function processing all files inside fA object according to rules in wconfig LUA file
@@ -1034,11 +584,13 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 			// register C functions in lua processor
 			lua_register(L, "_IsAudioFile", lua_caller_isaudiofile);
 			lua_register(L, "_SetTags", lua_caller_settags);
+			lua_register(L, "_RemoveTags", lua_caller_removetags);
 			lua_register(L, "_SetRequiredTags", lua_caller_setrequiredtags);
 			lua_register(L, "_CheckTagValues", lua_caller_checktagvalues);
 			lua_register(L, "_Rename", lua_caller_rename);
 			lua_register(L, "_Move", lua_caller_move);
 			lua_register(L, "_Delete", lua_caller_delete);
+			lua_register(L, "_Log", lua_caller_log);
 
 			(*lp)->Log(L"Process (" + wid + L")", L"Converting wide string to string", 3);
 			nc = ws2s(new_config);

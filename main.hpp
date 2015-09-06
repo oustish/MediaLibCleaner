@@ -26,9 +26,9 @@ This project is using these libraries:
 	<li><b>taglib</b> - licensed under LGPL and MPL.</li>
 </ul>
 */
-#ifdef _MLC_DEBUG
+/*#ifdef _MLC_DEBUG
 #include <vld/vld.h>
-#endif
+#endif*/
 
 #include <iostream>
 #include <memory> // for unique_ptr
@@ -51,6 +51,8 @@ This project is using these libraries:
 
 #include "LuaFunctions.hpp"
 #include "helpers.hpp"
+#include "MediaLibCleaner.hpp"
+#include "ConfigFile.hpp"
 
 #include <Windows.h>
 
@@ -59,6 +61,5 @@ This project is using these libraries:
 
 
 void lua_error_reporting(lua_State*, int);
-std::wstring ReplaceAllAliasOccurences(std::wstring&, MediaLibCleaner::File*);
 void process(std::wstring, std::unique_ptr<MediaLibCleaner::FilesAggregator>*, std::unique_ptr<MediaLibCleaner::LogProgram>*);
 void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregator* pathl, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la, std::string pth, std::unique_ptr<MediaLibCleaner::FilesAggregator>* fA, int* tf);

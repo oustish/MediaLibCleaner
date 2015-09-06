@@ -64,6 +64,35 @@ int lua_SetTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<
 }
 
 /**
+* Function to remove tag(s) in given audio file
+*
+* @param[in] L			 lua_State object to config file
+* @param[in] audiofile	 std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+* @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+*
+* @return Number of output arguments (for lua_register)
+*/
+int lua_RemoveTags(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
+	int n = lua_gettop(L) - 1; // argc for function
+
+	if (n == 0) { // requires positive amount of arguments
+		lua_pushboolean(L, false);
+		(*lp)->Log(L"lua_RemoveTags(" + audiofile->GetPath() + L")", L"Function expects positive amount of arguments (" + std::to_wstring(n) + L" given)", 2);
+		return 1;
+	}
+
+	for (int i = 1; i <= n; ++i) {
+		std::wstring tag = s2ws(lua_tostring(L, i));
+		audiofile->SetTag(tag, TagLib::String::null);
+	}
+
+	// return - indicates function completed it's run
+	lua_pushboolean(L, true);
+	return 1;
+}
+
+/**
 * Function to set required tag(s) in given audio file
 *
 * @param[in] L          lua_State object to config file
@@ -202,6 +231,31 @@ int lua_Delete(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<M
 	return 1;
 }
 
+/**
+* Function to write message to AlertLog
+*
+* @param[in] L		    lua_State object to config file
+* @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
+* @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
+*
+* @return Number of output arguments (for lua_register)
+*/
+int lua_Log(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la) {
+	int n = lua_gettop(L) - 1; // argc for function
+
+	if (n == 0) { // requires positive amount of arguments
+		lua_pushboolean(L, false);
+		(*lp)->Log(L"lua_Log(" + audiofile->GetPath() + L")", L"Function expects exactly 1 argument (" + std::to_wstring(n) + L" given)", 2);
+		return 1;
+	}
+
+	(*la)->Log(audiofile->GetPath(), L"[USER] " + s2ws(lua_tostring(L, 1)));
+
+	// return - indicates function completed it's run
+	lua_pushboolean(L, true);
+	return 1;
+}
 
 
 /**

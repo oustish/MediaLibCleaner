@@ -5,10 +5,16 @@
  *
  * File contains declaration of every class, field and method in MediaLibCleaner namespace
  */
+#ifndef MEDIALIBCLEANER_H
+#define MEDIALIBCLEANER_H
+
 #include <iostream>
+#include <vector>
 #include <stdlib.h>
 
 #include <boost/locale.hpp>
+#include <boost/regex.hpp>
+#include <boost/program_options.hpp>
 
 #include <taglib/taglib.h>
 #include <taglib/fileref.h>
@@ -700,3 +706,5 @@ namespace MediaLibCleaner
 	static std::string base64_encode(const char* buf, int bufLen);
 	static std::vector<char> base64_decode(std::string encoded_string);
 }
+
+#endif
