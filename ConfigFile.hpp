@@ -1,5 +1,4 @@
-#ifndef CONFIGFILE_H
-#define CONFIGFILE_H
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -7,7 +6,6 @@
 #include <boost/program_options/parsers.hpp>
 
 #include "MediaLibCleaner.hpp"
-#include "helpers.hpp"
 
 namespace MediaLibCleaner
 {
@@ -119,8 +117,8 @@ namespace MediaLibCleaner
 			bool isConfigFile = false;
 			ConfigFileType cfg_type = CFG_FILE_NONE;
 
-			boost::program_options::variables_map& parse_command_line(int argc, char *argv[]);
-			boost::program_options::variables_map& parse_config_file(std::string path);
+			boost::program_options::variables_map parse_command_line(int argc, char *argv[]);
+			boost::program_options::variables_map parse_config_file(std::string path);
 
 		public:
 			ConfigFileReader(int argc, char *argv[]);
@@ -137,5 +135,3 @@ namespace MediaLibCleaner
 		};
 	}
 }
-
-#endif

@@ -574,7 +574,7 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 		do {
 			(*lp)->Log(L"Process (" + wid + L")", L"File: " + cfile->GetPath(), 3);
 			(*lp)->Log(L"Process (" + wid + L")", L"Creating config file", 3);
-			new_config = ReplaceAllAliasOccurences(wconfig, cfile);
+			new_config = MediaLibCleaner::ReplaceAllAliasOccurences(wconfig, cfile, path, datetime_raw, total_files);
 
 			(*lp)->Log(L"Process (" + wid + L")", L"Lua procesor init", 3);
 			lua_State *L = luaL_newstate();

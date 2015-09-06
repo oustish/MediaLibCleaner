@@ -5,8 +5,7 @@
 *
 * This file contains declarations of all functions used as lua functions (via lua_register() function)
 */
-#ifndef LUAFUNCTIONS_H
-#define LUAFUNCTIONS_H
+#pragma once
 
 #include <lua/lua.hpp>
 #include <iostream>
@@ -25,5 +24,3 @@ int lua_Delete(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibClea
 int lua_Log(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 
 void lua_ErrorReporting(lua_State *, int, std::unique_ptr<MediaLibCleaner::LogProgram>*);
-
-#endif

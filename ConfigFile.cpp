@@ -726,7 +726,7 @@ std::wstring ConfigFile::ConfigFileReader::generate()
 	return retval.str();
 }
 
-boost::program_options::variables_map& ConfigFile::ConfigFileReader::parse_command_line(int argc, char *argv[])
+boost::program_options::variables_map ConfigFile::ConfigFileReader::parse_command_line(int argc, char *argv[])
 {
 	namespace po = boost::program_options;
 
@@ -1155,7 +1155,7 @@ boost::program_options::variables_map& ConfigFile::ConfigFileReader::parse_comma
 	return vm;
 }
 
-boost::program_options::variables_map& ConfigFile::ConfigFileReader::parse_config_file(std::string path)
+boost::program_options::variables_map ConfigFile::ConfigFileReader::parse_config_file(std::string path)
 {
 	namespace po = boost::program_options;
 

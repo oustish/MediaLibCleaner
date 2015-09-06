@@ -49,8 +49,8 @@ This project is using these libraries:
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/program_options.hpp>
 
-#include "LuaFunctions.hpp"
 #include "helpers.hpp"
+#include "LuaFunctions.hpp"
 #include "MediaLibCleaner.hpp"
 #include "ConfigFile.hpp"
 

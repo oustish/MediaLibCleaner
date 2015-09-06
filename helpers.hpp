@@ -6,8 +6,7 @@
 This file contains declarations of all helper functions
 */
 
-#ifndef HELPERS_H
-#define HELPERS_H
+#pragma once
 
 #include <iostream>
 #include <time.h>
@@ -20,7 +19,6 @@ This file contains declarations of all helper functions
 
 #include <taglib/fileref.h>
 
-#include "MediaLibCleaner.hpp"
 
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
@@ -34,7 +32,3 @@ std::wstring get_date_iso_8601_wide(time_t);
 std::wstring get_date_rfc_2822_wide(time_t);
 std::wstring s2ws(const std::string&);
 std::string ws2s(const std::wstring&);
-
-std::wstring ReplaceAllAliasOccurences(std::wstring&, MediaLibCleaner::File*);
-
-#endif

@@ -5,8 +5,7 @@
  *
  * File contains declaration of every class, field and method in MediaLibCleaner namespace
  */
-#ifndef MEDIALIBCLEANER_H
-#define MEDIALIBCLEANER_H
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -702,9 +701,8 @@ namespace MediaLibCleaner
 	};
 
 	MediaLibCleaner::DFC* AddDFC(std::list<MediaLibCleaner::DFC*>* dfc_list, boost::filesystem::path pth, std::mutex* synch, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la);
+	std::wstring ReplaceAllAliasOccurences(std::wstring&, MediaLibCleaner::File*, std::string, time_t, int);
 	static std::string base64_encode_w(const std::vector<char>& buffer);
 	static std::string base64_encode(const char* buf, int bufLen);
 	static std::vector<char> base64_decode(std::string encoded_string);
 }
-
-#endif
