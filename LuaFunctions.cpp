@@ -1,7 +1,7 @@
 /**
  @file
  @author Szymon Oracki <szymon.oracki@oustish.pl>
- @version 0.4
+ @version 1.0.0
 
  This file contains definitions of all functions used as lua functions (via lua_register() function)
  */
@@ -186,12 +186,13 @@ int lua_Rename(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<M
 *
 * @param[in] L          lua_State object to config file
 * @param[in] audiofile  std::unique_ptr to MediaLibCleaner::File object representing current file
+* @param[in] path       Working directory path
 * @param[in] lp         std::unique_ptr to MediaLibCleaner::LogProgram object used for logging purposes
 * @param[in] la         std::unique_ptr to MediaLibCleaner::LogAlert object used for logging purposes
 *
 * @return Number of output arguments (for lua_register)
 */
-int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
+int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile, std::string path, std::unique_ptr<MediaLibCleaner::LogProgram>* lp, std::unique_ptr<MediaLibCleaner::LogAlert>* la)
 {
 	int n = lua_gettop(L) - 1; // argc for function
 
@@ -203,7 +204,7 @@ int lua_Move(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<Med
 
 	std::wstring nloc = s2ws(lua_tostring(L, 1));
 
-	lua_pushboolean(L, audiofile->Move(nloc));
+	lua_pushboolean(L, audiofile->Move(nloc, path));
 	return 1;
 }
 
@@ -268,7 +269,10 @@ int lua_Log(lua_State *L, MediaLibCleaner::File* audiofile, std::unique_ptr<Medi
 void lua_ErrorReporting(lua_State *L, int status, std::unique_ptr<MediaLibCleaner::LogProgram>* programlog)
 {
 	if (status != 0) { // if error occured
-		(*programlog)->Log(L"LUA", s2ws(lua_tostring(L, -1)), 1);
+		if (*programlog)
+			(*programlog)->Log(L"LUA", s2ws(lua_tostring(L, -1)), 1);
+		else
+			std::wcerr << "[LUA] " << s2ws(lua_tostring(L, -1)) << std::endl;
 		lua_pop(L, 1); // remove error message
 	}
 }

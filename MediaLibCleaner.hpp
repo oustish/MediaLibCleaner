@@ -1,7 +1,7 @@
 /**
  * @file
  * @author Szymon Oracki <szymon.oracki@oustish.pl>
- * @version 0.4
+ * @version 1.0.0
  *
  * File contains declaration of every class, field and method in MediaLibCleaner namespace
  */
@@ -12,8 +12,7 @@
 #include <stdlib.h>
 
 #include <boost/locale.hpp>
-#include <boost/regex.hpp>
-#include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <taglib/taglib.h>
 #include <taglib/fileref.h>
@@ -466,6 +465,8 @@ namespace MediaLibCleaner
 		void setXiphTag(TagLib::String value, std::string xiphtag, TagLib::Ogg::XiphComment *tag);
 		void setM4ATag(TagLib::String value, std::string m4atag, TagLib::MP4::Tag *tag);
 
+		FileType release();
+		void reopen(FileType);
 	public:
 
 		File(std::wstring, MediaLibCleaner::DFC*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
@@ -563,7 +564,7 @@ namespace MediaLibCleaner
 		bool HasTag(std::wstring tag, TagLib::String val = TagLib::String::null);
 		bool HasTag(std::wstring tag, std::vector<std::wstring> val);
 		bool Rename(std::wstring);
-		bool Move(std::wstring);
+		bool Move(std::wstring, std::string);
 		bool Delete();
 		bool SetTag(std::wstring, TagLib::String val = TagLib::String::null);
 

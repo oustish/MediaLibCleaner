@@ -1,7 +1,7 @@
 /**
  * @file
  * @author Szymon Oracki <szymon.oracki@oustish.pl>
- * @version 0.4
+ * @version 1.0.0
  *
  * This file contains definitions of all methods for MediaLibCleaner namespace
  */
@@ -2144,16 +2144,60 @@ bool MediaLibCleaner::File::HasTag(std::wstring tag, TagLib::String val)
 */
 bool MediaLibCleaner::File::Rename(std::wstring nname)
 {
+#ifdef WIN32
+	// replace all values that are not possible to be used in filenames on Windows OS
+	// this does not include Linux OS, as it accepts any characters in filenames
+	replaceAll(nname, L"/", L"");
+	replaceAll(nname, L"\\", L"");
+	replaceAll(nname, L"*", L"");
+	replaceAll(nname, L"?", L"");
+	replaceAll(nname, L"\"", L"");
+	replaceAll(nname, L"<", L"");
+	replaceAll(nname, L">", L"");
+	replaceAll(nname, L"|", L"");
+	replaceAll(nname, L":", L"");
+	replaceAll(nname, L"..", L""); // security, so there's no ../../../../ (...) values or anything
+#endif
+
 	(*this->logalert)->Log(this->d_path, L"Renaming file to: '" + nname + L"'");
 
 	boost::filesystem::wpath loc_path = this->d_path, new_loc_path;
 
 	std::wstring nn = loc_path.parent_path().generic_wstring() + L"/" + nname;
+
+#ifdef WIN32
+	// replace all forbidden values (except ones that are used as directory separators and : in drive letter or NTFS stream)
+	replaceAll(nn, L"*", L"");
+	replaceAll(nn, L"?", L"");
+	replaceAll(nn, L"\"", L"");
+	replaceAll(nn, L"<", L"");
+	replaceAll(nn, L">", L"");
+	replaceAll(nn, L"|", L"");
+#endif
+
 	new_loc_path = nn;
 
-	boost::filesystem::rename(loc_path, new_loc_path);
+	FileType t = this->release();
+
+	try {
+		boost::filesystem::rename(loc_path, new_loc_path);
+	}
+	catch (boost::filesystem::filesystem_error e)
+	{
+		if (e.path1 == e.path2)
+		{
+			this->reopen(t);
+			return true;
+		}
+
+		(*this->logprogram)->Log(L"MediaLibCleaner::File::Rename()", s2ws(e.what()), 1);
+		this->reopen(t);
+		return false;
+	}
 
 	this->d_path = new_loc_path.generic_wstring();
+
+	this->reopen(t);
 
 	return true;
 }
@@ -2162,21 +2206,76 @@ bool MediaLibCleaner::File::Rename(std::wstring nname)
 * Method for moving file to new destination in the user filesystem.
 * Be aware that moving file will invalidate DFC counter inside!
 *
-* @param[in] nloc New file location
+* @param[in] nloc New file location within 'path'
+* @param[in] path Path of the working directory
 *
 * @return Status of move operation
 */
-bool MediaLibCleaner::File::Move(std::wstring nloc)
+bool MediaLibCleaner::File::Move(std::wstring nloc, std::string path)
 {
-	(*this->logalert)->Log(this->d_path, L"Moving file to: '" + nloc + L"'");
+	std::wstring nn;
+	for (auto& part : boost::filesystem::path(nloc))
+	{
+		std::wstring p = part.generic_wstring();
+		boost::algorithm::trim(p);
+		nn += p + L"/";
+	}
+
+#ifdef WIN32
+	// replace all forbidden values (except ones that are used as directory separators)
+	replaceAll(nn, L"*", L"");
+	replaceAll(nn, L"?", L"");
+	replaceAll(nn, L"\"", L"");
+	replaceAll(nn, L"<", L"");
+	replaceAll(nn, L">", L"");
+	replaceAll(nn, L"|", L"");
+	replaceAll(nn, L":", L"");
+	replaceAll(nn, L".", L""); // security, so there's no ../../../../ (...) values or anything
+#endif
 
 	boost::filesystem::path loc_path = this->d_path;
-	boost::filesystem::wpath new_loc_path = nloc;
+	boost::filesystem::wpath new_loc_path = (s2ws(path) + L"/" + nn + this->d_filename + L"." + this->d_ext);
 
-	boost::filesystem::rename(loc_path, new_loc_path);
+	nn = new_loc_path.generic_wstring();
+	replaceAll(nn, L"\\", L"/");
 
+	new_loc_path = nn;
+
+	if (boost::filesystem::exists(new_loc_path))
+	{
+		(*this->logalert)->Log(this->d_path, L"_Move(): file already exists: '" + nloc + L"'");
+	}
+
+	boost::filesystem::path dir = new_loc_path.parent_path();
+
+	if (!boost::filesystem::exists(dir))
+	{
+		boost::filesystem::create_directories(dir);
+	}
+
+	(*this->logalert)->Log(this->d_path, L"Moving file to: '" + new_loc_path.generic_wstring() + L"'");
+
+	FileType t = this->release();
+
+	try {
+		boost::filesystem::rename(loc_path, new_loc_path);
+	}
+	catch (boost::filesystem::filesystem_error e)
+	{
+		if (e.path1 == e.path2)
+		{
+			this->reopen(t);
+			return true;
+		}
+
+		(*this->logprogram)->Log(L"MediaLibCleaner::File::Rename()", s2ws(e.what()), 1);
+		this->reopen(t);
+		return false;
+	}
 	this->d_path = new_loc_path.generic_wstring();
 	this->d_dfc = nullptr;
+
+	this->reopen(t);
 
 	return true;
 }
@@ -2194,10 +2293,10 @@ bool MediaLibCleaner::File::Delete()
 
 	if (boost::filesystem::exists(loc_path))
 	{
+		FileType t = this->release();
 		boost::filesystem::remove(loc_path);
-		this->isInitiated = false;
 
-		if (this->filetype != FILETYPE_UNKNOWN)
+		if (t != FILETYPE_UNKNOWN)
 		{
 			this->d_dfc->DecCount();
 		}
@@ -2350,7 +2449,79 @@ void MediaLibCleaner::File::save()
 	}
 }
 
+/**
+ * Method allows to release all file handles MLC or taglib can have; invalidates the file and resets it's FileType
+ *
+ * @return Old filetype to be saved for later
+ */
+MediaLibCleaner::FileType MediaLibCleaner::File::release()
+{
+	if (!this->IsInitiated()) return FILETYPE_UNKNOWN;
 
+	this->save();
+	this->hasChanged = false;
+
+	
+	if (this->filetype == FILETYPE_MP3)
+	{
+		auto ptr = this->taglib_file_mp3.release();
+		delete ptr;
+	}
+	else if (this->filetype == FILETYPE_OGG)
+	{
+		auto ptr2 = this->taglib_file_ogg.release();
+		delete ptr2;
+	}
+	else if (this->filetype == FILETYPE_FLAC)
+	{
+		auto ptr3 = this->taglib_file_flac.release();
+		delete ptr3;
+	}
+	else if (this->filetype == FILETYPE_MP4)
+	{
+		auto ptr4 = this->taglib_file_m4a.release();
+		delete ptr4;
+	}
+
+	auto retval = this->filetype;
+
+	this->filetype = FILETYPE_UNKNOWN;
+	this->isInitiated = false;
+
+	return retval;
+}
+
+/**
+ * Method allows to reopen file based on given FileType
+ *
+ * @param[in] type  FileType enum value indicating what kind of file is this File object represents
+ */
+void MediaLibCleaner::File::reopen(MediaLibCleaner::FileType type)
+{
+	if (type == FILETYPE_MP3)
+	{
+		std::unique_ptr<TagLib::MPEG::File> temp(new TagLib::MPEG::File(TagLib::FileName(this->d_path.c_str())));
+		this->taglib_file_mp3.swap(temp);
+	}
+	else if (type == FILETYPE_OGG)
+	{
+		std::unique_ptr<TagLib::Ogg::Vorbis::File> temp2(new TagLib::Ogg::Vorbis::File(TagLib::FileName(this->d_path.c_str())));
+		this->taglib_file_ogg.swap(temp2);
+	}
+	else if (type == FILETYPE_FLAC)
+	{
+		std::unique_ptr<TagLib::FLAC::File> temp3(new TagLib::FLAC::File(TagLib::FileName(this->d_path.c_str())));
+		this->taglib_file_flac.swap(temp3);
+	}
+	else if (type == FILETYPE_MP4)
+	{
+		std::unique_ptr<TagLib::MP4::File> temp4(new TagLib::MP4::File(TagLib::FileName(this->d_path.c_str())));
+		this->taglib_file_m4a.swap(temp4);
+	}
+
+	this->filetype = type;
+	this->isInitiated = true;
+}
 
 
 

@@ -1,7 +1,7 @@
 /**
 @file
 @author Szymon Oracki <szymon.oracki@oustish.pl>
-@version 0.4
+@version 1.0.0
 
 This file contains definitions of all helper functions
 */
@@ -48,11 +48,11 @@ void replaceAll(std::wstring& str, const std::wstring& from, const std::wstring&
 }
 
 /**
-* Function processing given timestamp and returning date in ISO-8601 complaint std::string 
+* Function processing given timestamp and returning date in ISO-8601 compliant std::string 
 *
-* @param[in] t  Timestamp to be changed into ISO-8601 complaint date format as std::string
+* @param[in] t  Timestamp to be changed into ISO-8601 compliant date format as std::string
 *
-* @return ISO-8601 complaint std::string of given timestamp
+* @return ISO-8601 compliant std::string of given timestamp
 */
 std::string get_date_iso_8601(time_t t) {
 	using namespace boost::posix_time;
@@ -99,11 +99,11 @@ std::string get_date_iso_8601(time_t t) {
 }
 
 /**
-* Function processing given timestamp and returning date in RFC2822 complaint std::string
+* Function processing given timestamp and returning date in RFC2822 compliant std::string
 *
-* @param[in] t  Timestamp to be changed into RFC2822 complaint date format as std::string
+* @param[in] t  Timestamp to be changed into RFC2822 compliant date format as std::string
 *
-* @return RFC2822 complaint std::string of given timestamp
+* @return RFC2822 compliant std::string of given timestamp
 */
 std::string get_date_rfc_2822(time_t t) {
 	using namespace boost::posix_time;
@@ -148,28 +148,26 @@ std::string get_date_rfc_2822(time_t t) {
 }
 
 /**
-* Function processing given timestamp and returning date in ISO-8601 complaint std::string
+* Function processing given timestamp and returning date in ISO-8601 compliant std::string
 *
-* @param[in] t  Timestamp to be changed into ISO-8601 complaint date format and returned as std::wstring
+* @param[in] t  Timestamp to be changed into ISO-8601 compliant date format and returned as std::wstring
 *
-* @return ISO-8601 complaint std::wstring of given timestamp
+* @return ISO-8601 compliant std::wstring of given timestamp
 */
 std::wstring get_date_iso_8601_wide(time_t t) {
 	return s2ws(get_date_iso_8601(t));
 }
 
 /**
-* Function processing given timestamp and returning date in IRFC2822 complaint std::string
+* Function processing given timestamp and returning date in IRFC2822 compliant std::string
 *
-* @param[in] t  Timestamp to be changed into RFC2822 complaint date format and returned as std::wstring
+* @param[in] t  Timestamp to be changed into RFC2822 compliant date format and returned as std::wstring
 *
-* @return RFC2822 complaint std::wstring of given timestamp
+* @return RFC2822 compliant std::wstring of given timestamp
 */
 std::wstring get_date_rfc_2822_wide(time_t t) {
 	return s2ws(get_date_rfc_2822(t));
 }
-
-#ifdef WIN32
 
 /**
 * Function to change encoding of given wide char string and convert it to normal std::string
@@ -210,49 +208,3 @@ std::wstring s2ws(const std::string& in)
 
 	
 }
-
-#else
-
-/**
-* Function to change encoding of given wide char string and convert it to normal std::string
-*
-* @param[in] win  Input wide string to be converted
-*
-* @return std::string representation of wide string given as parameter
-*/
-std::string ws2s(const std::wstring& win)
-{
-	int lens = win.length();
-	char* buffer = new char[lens * 3];
-
-	int ret = wcstombs(buffer, win.c_str(), sizeof(buffer));
-
-	std::string out = buffer;
-	delete[] buffer;
-
-	if (ret) return out;
-	return "";
-}
-
-/**
-* Function to change encoding of given multi byte string and convert it to wide string
-*
-* @param[in] in  Input string to be converted
-*
-* @return std::wstring representation of normal string given as parameter
-*/
-std::wstring s2ws(const std::string& in)
-{
-	int lens = in.length();
-	wchar_t* buffer = new wchar_t[lens * 3];
-
-	int ret = mbstowcs(buffer, in.c_str(), sizeof(buffer));
-
-	std::wstring out = buffer;
-	delete[] buffer;
-
-	if (ret) return out;
-	return L"";
-}
-
-#endif

@@ -1,7 +1,7 @@
 /**
  * @file
  * @author Szymon Oracki <szymon.oracki@oustish.pl>
- * @version 0.4
+ * @version 1.0.0
  *
  *This file is a start point for entire application.
  */
@@ -60,6 +60,11 @@ int total_files = 0;
 * Global variable containing timestamp of program startup
 */
 time_t datetime_raw = 0;
+
+/**
+* Global variable holding status if _Delete or _Move was called succesfully
+*/
+bool delete_or_move_cmpltd = false;
 
 /**
  * Function calling lua_IsAudioFile() function. This function is registered withing lua processor!
@@ -167,7 +172,9 @@ static int lua_caller_move(lua_State *L)
 	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
 
-	return lua_Move(L, cfile, &programlog, &alertlog);
+	delete_or_move_cmpltd = true;
+
+	return lua_Move(L, cfile, path, &programlog, &alertlog);
 }
 
 /**
@@ -182,6 +189,8 @@ static int lua_caller_delete(lua_State *L)
 	lua_getglobal(L, "__thread");
 	int thd = static_cast<int>(lua_tonumber(L, -1));
 	auto cfile = current_file_thd[thd];
+
+	delete_or_move_cmpltd = true;
 
 	return lua_Delete(L, cfile, &programlog, &alertlog);
 }
@@ -344,6 +353,8 @@ int main(int argc, char *argv[]) {
 	if (s != 0) { // because error code may change after execution
 		// report any errors, if found
 		lua_error_reporting(L, s);
+		std::wcerr << L"Could not execute LUA script properly. Check it against any syntax error. Error message above might help." << std::endl;
+		return 8;
 	}
 	// read values to stack
 	// as this is stack - read it in reverse
@@ -357,7 +368,7 @@ int main(int argc, char *argv[]) {
 	// check if returning values have proper type
 	if (!lua_isstring(L, -1) || !lua_isstring(L, -2) || !lua_isstring(L, -3) || !lua_isnumber(L, -4) || !lua_isnumber(L, -5)) {
 		std::wcerr << L"One or more of startup LUA parameters is incorrect. Exiting..." << std::endl;
-		return 2; // return error code here, so entire program will end; it's desired; debug
+		return 2; // return error code here, so entire program will end; it's desired
 	}
 
 	// read all parameters
@@ -473,6 +484,35 @@ int main(int argc, char *argv[]) {
 	process(wconfig, &filesAggregator, &programlog);
 
 
+	// delete all empty directories IF _Move or _Delete was called
+	if (delete_or_move_cmpltd)
+	{
+		namespace fs = boost::filesystem;
+
+		fs::recursive_directory_iterator it(path);
+		fs::recursive_directory_iterator itEnd;
+
+		while (it != itEnd)
+		{
+			boost::system::error_code  ec;
+			const fs::path&            rPath = it->path();
+
+			if (fs::is_directory(rPath, ec) && fs::is_empty(rPath, ec))
+			{
+				const fs::path pth = rPath;
+				++it;
+
+				fs::remove(pth, ec);
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+
+
+
 	// moment of relax :)
 	// follow it to the end
 
@@ -584,6 +624,8 @@ void process(std::wstring wconfig, std::unique_ptr<MediaLibCleaner::FilesAggrega
 
 		cfile = (*fA)->next();
 		do {
+			if (cfile == nullptr) break;
+
 			(*lp)->Log(L"Process (" + wid + L")", L"File: " + cfile->GetPath(), 3);
 			(*lp)->Log(L"Process (" + wid + L")", L"Creating config file", 3);
 			new_config = MediaLibCleaner::ReplaceAllAliasOccurences(wconfig, cfile, path, datetime_raw, total_files);
@@ -680,6 +722,8 @@ void scan(std::list<MediaLibCleaner::DFC*>* dfcl, MediaLibCleaner::PathsAggregat
 
 		do
 		{
+			if (currpath == "") break;
+
 			(*lp)->Log(L"Scan (" + wid + L")", L"Current file: " + currpath.generic_wstring(), 3);
 
 			if (boost::filesystem::is_directory(currpath)) {

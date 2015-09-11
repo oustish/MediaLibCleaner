@@ -1,7 +1,7 @@
 /**
 * @file
 * @author Szymon Oracki <szymon.oracki@oustish.pl>
-* @version 0.4
+* @version 1.0.0
 *
 * This file contains declarations of all functions used as lua functions (via lua_register() function)
 */
@@ -19,7 +19,7 @@ int lua_RemoveTags(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLib
 int lua_SetRequiredTags(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_CheckTagValues(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_Rename(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
-int lua_Move(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
+int lua_Move(lua_State *, MediaLibCleaner::File*, std::string, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_Delete(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 int lua_Log(lua_State *, MediaLibCleaner::File*, std::unique_ptr<MediaLibCleaner::LogProgram>*, std::unique_ptr<MediaLibCleaner::LogAlert>*);
 

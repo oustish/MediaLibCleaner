@@ -1,7 +1,7 @@
 /**
 @file
 @author Szymon Oracki <szymon.oracki@oustish.pl>
-@version 0.4
+@version 1.0.0
 
 This file is a start point header file for entire application.
 */
