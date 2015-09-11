@@ -321,6 +321,20 @@ int main(int argc, char *argv[]) {
 	lua_pushstring(L, "System");
 	lua_setglobal(L, "_action");
 
+	// pushing some default values for globals
+	// omitting _path, since user must define something :)
+	lua_pushnumber(L, 0);
+	lua_setglobal(L, "_max_threads");
+
+	lua_pushnumber(L, 2);
+	lua_setglobal(L, "_error_level");
+
+	lua_pushstring(L, "-");
+	lua_setglobal(L, "_error_log");
+
+	lua_pushstring(L, "-");
+	lua_setglobal(L, "_alert_log");
+
 	std::wcout << L"Executing script... (SYSTEM)" << std::endl; //d
 
 	// execute script
@@ -447,7 +461,7 @@ int main(int argc, char *argv[]) {
 	//>> - C: Rommilly, are you reading these forces?
 	//>> - R: Unbelievable.
 	//>> - D: A litteral heart of darkness.
-	//>> - R: If we could just see the collapsed star insinde - the singularity - yeah, we'd solve gravity.
+	//>> - R: If we could just see the collapsed star inside - the singularity - yeah, we'd solve gravity.
 	//>> - C: We can't get anything from it?
 	//>> - R: Nothing escapes that horizon, not even light. All the answers there, just no way to see it.
 	//>> - B: There's Millers planet.
