@@ -232,10 +232,6 @@ int main(int argc, char *argv[]) {
 	//>> - T: Stage 2 separation.
 
 
-	// for performance wizard
-	Sleep(5 * 1000); // 5 secs initial halt
-
-
 	// capture time app was launched
 	datetime_raw = time(nullptr);
 
