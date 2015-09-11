@@ -52,7 +52,6 @@ This project is using these libraries:
 #include "helpers.hpp"
 #include "LuaFunctions.hpp"
 #include "MediaLibCleaner.hpp"
-#include "ConfigFile.hpp"
 
 #include <Windows.h>
 

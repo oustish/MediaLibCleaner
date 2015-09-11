@@ -75,7 +75,7 @@
 /**
 * @namespace MediaLibCleaner
 *
-* Namespace containing all classes and functions required for the application to complete designed tasks.
+* @brief Namespace containing all classes and functions required for the application to complete designed tasks.
 */
 
 namespace MediaLibCleaner

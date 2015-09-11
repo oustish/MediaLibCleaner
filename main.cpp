@@ -245,24 +245,34 @@ int main(int argc, char *argv[]) {
 
 	
 	// get cmd line parameters figured out
-	std::unique_ptr<MediaLibCleaner::ConfigFile::ConfigFileReader> cfg_reader(new MediaLibCleaner::ConfigFile::ConfigFileReader(argc, argv));
+	namespace po = boost::program_options;
+
+	po::options_description desc("Allowed options");
+	desc.add_options()
+		("help", "produce help message")
+		("config", po::value<std::string>(), "path to LUA config file")
+		;
+
+	po::variables_map vm;
+	po::store(po::parse_command_line(argc, argv, desc), vm);
+	po::notify(vm);
 
 	// display help message if needed
-	if (cfg_reader->help())
+	if (vm.count("help"))
 	{
-		std::cerr << cfg_reader->usage() << std::endl;
+		std::cerr << desc << std::endl;
 		return 7;
 	}
 
 	// if not, try to figure out which config file to use
 	std::wstring wconfig;
-	if (cfg_reader->configFile() && cfg_reader->cfgType() == 0) // LUA
+	if (vm.count("config")) // LUA
 	{
-		std::string rpath = cfg_reader->configFilePath();
+		std::string rpath = vm["config"].as<std::string>();
 		// check if path exists, then continue
 		if (!boost::filesystem::exists(rpath) || !boost::filesystem::is_regular_file(rpath)) {
 			std::wcout << L"ERROR: Config LUA file does not exists in the given path. Please make sure file exists and path given is correct." << std::endl;
-			std::cout << cfg_reader->usage() << std::endl;
+			std::cout << desc << std::endl;
 			return 6;
 		}
 
@@ -273,17 +283,9 @@ int main(int argc, char *argv[]) {
 		wss << wfile.rdbuf();
 		wconfig = wss.str();
 	}
-	else if(cfg_reader->configFile() && cfg_reader->cfgType() == 1) // INI
-	{
-		
-	}
-	else if(cfg_reader->cfgType() == 2) // CMD LINE ARGS
-	{
-		wconfig = cfg_reader->generate();
-	}
 	else // OOPS, NO MATCHES
 	{
-		std::cerr << cfg_reader->usage() << std::endl;
+		std::cerr << desc << std::endl;
 		return 7;
 	}
 

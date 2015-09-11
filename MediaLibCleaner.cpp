@@ -2912,8 +2912,11 @@ MediaLibCleaner::DFC* MediaLibCleaner::AddDFC(std::list<MediaLibCleaner::DFC*>* 
 *
 * @see http://flute.eti.pg.gda.pl/trac/student-projects/wiki/MediaLibCleaner/Aliases for aliases definitions
 *
-* @param[in]	wcfg	   String with config file content. Any format is accepted.
-* @param[in]	audiofile  std::unique_ptr to MediaLibCleaner::AudioFile object representing current file
+* @param[in]	wcfg	      String with config file content. Any format is accepted.
+* @param[in]	audiofile     std::unique_ptr to MediaLibCleaner::AudioFile object representing current file
+* @param[in]	path	      Path to the working directory
+* @param[in]	datetime_raw  Unix timestamp of the program startup moment
+* @param[in]	total_files   Number of all files contained in the working directory
 *
 * @return String containing config file with aliases replaced
 */
